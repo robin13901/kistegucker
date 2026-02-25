@@ -3,7 +3,6 @@ import './globals.css';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { CookieBanner } from '@/components/cookie-banner';
-import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Die Kistegucker e.V. | Theater in Linsengericht',
@@ -18,7 +17,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main>{children}</main>
         <Footer />
         <CookieBanner />
-        <Analytics />
       </body>
     </html>
   );

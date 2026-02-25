@@ -17,7 +17,7 @@ export default function EventsPage() {
         <div className="space-y-4">
           {upcoming.map((event) => (
             <article key={event.id} className="rounded-2xl bg-white p-5 shadow-card">
-              <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)} · {event.venue}</p>
+              <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)}</p>
               <h2 className="mt-1 text-xl font-semibold">{event.title}</h2>
               <p className="mt-2 text-zinc-700">{event.description}</p>
               <div className="mt-3 flex gap-4">
@@ -35,7 +35,7 @@ export default function EventsPage() {
         <div className="space-y-4">
           {past.map((event) => (
             <article key={event.id} className="rounded-2xl border border-zinc-200 bg-white p-5">
-              <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)} · {event.venue}</p>
+              <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)}</p>
               <h3 className="text-lg font-semibold">{event.title}</h3>
               <p className="text-zinc-700">{event.description}</p>
               <Link href={`/events/${event.slug}`} className="mt-2 inline-flex font-semibold text-accent">

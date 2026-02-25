@@ -16,7 +16,7 @@ export default function HomePage() {
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div className="space-y-5">
             <span className="inline-flex rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent">
-              Theaterverein aus Linsengericht
+              Theaterverein Linsengericht
             </span>
             <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
               Bühne frei für <span className="text-accent">Die Kistegucker</span>
@@ -24,11 +24,6 @@ export default function HomePage() {
             <p className="text-lg text-zinc-700">
               Wir bringen modernes Amateurtheater mit Herz, Humor und Haltung auf die Bühne.
             </p>
-            <div className="flex gap-3">
-              <Link href="/events" className="rounded-xl border border-zinc-300 px-5 py-3 font-semibold">
-                Nächste Aufführung
-              </Link>
-            </div>
           </div>
           <div className="relative overflow-hidden rounded-3xl shadow-card">
             <Image
@@ -48,7 +43,7 @@ export default function HomePage() {
           <section className="space-y-6">
             <h2 className="text-2xl font-semibold">Demnächst bei uns</h2>
             <article className="rounded-2xl bg-white p-6 shadow-card">
-              <p className="text-sm text-zinc-500">{formatDateTime(upcoming.date, upcoming.time)} · {upcoming.venue}</p>
+              <p className="text-sm text-zinc-500">{formatDateTime(upcoming.date, upcoming.time)}</p>
               <h3 className="mt-2 text-xl font-semibold">{upcoming.title}</h3>
               <p className="mt-2 text-zinc-700">{upcoming.description}</p>
               <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -56,7 +51,7 @@ export default function HomePage() {
                   Tickets reservieren
                 </Link>
                 <Link href={`/events/${upcoming.slug}`} className="inline-flex text-sm font-semibold text-accent">
-                  Details ansehen →
+                  Details →
                 </Link>
               </div>
             </article>
@@ -70,11 +65,11 @@ export default function HomePage() {
           <div className="space-y-4">
             {past.map((event) => (
               <article key={event.id} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-card">
-                <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)} · {event.venue}</p>
+                <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)}</p>
                 <h3 className="mt-2 text-xl font-semibold">{event.title}</h3>
                 <p className="mt-2 text-zinc-700">{event.description}</p>
                 <Link href={`/events/${event.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">
-                  Details ansehen →
+                  Details →
                 </Link>
               </article>
             ))}

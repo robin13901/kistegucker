@@ -19,7 +19,7 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
     <div className="container-default space-y-8 py-12">
       <div>
         <p className="text-sm text-zinc-500">
-           {formatDateTime(event.date, event.time)} · {isUpcoming ? UPCOMING_LOCATION : event.venue}
+           {formatDateTime(event.date, event.time)}
         </p>
         <h1 className="text-3xl font-bold">{event.title}</h1>
         <p className="mt-3 max-w-2xl text-zinc-700">{event.description}</p>

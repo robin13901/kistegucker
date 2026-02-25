@@ -7,7 +7,7 @@ export default function MembersPage() {
       <h1 className="mb-8 text-3xl font-bold">Unser Ensemble</h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {members.map((member) => (
-          <article key={member.id} className="rounded-2xl bg-white p-5 shadow-card transition hover:-translate-y-1">
+          <article id={`member-${member.id}`} key={member.id} className="rounded-2xl bg-white p-5 shadow-card transition hover:-translate-y-1">
             <Image
               src={member.image_url}
               alt={member.name}

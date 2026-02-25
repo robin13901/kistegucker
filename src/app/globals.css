@@ -6,6 +6,11 @@
   color-scheme: light;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   @apply bg-surface text-zinc-900 antialiased;
 }

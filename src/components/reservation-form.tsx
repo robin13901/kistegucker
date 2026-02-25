@@ -1,11 +1,10 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { events } from '@/lib/mock-data';
 
 type Status = { type: 'idle' | 'success' | 'error'; message?: string };
 
-export function ReservationForm() {
+export function ReservationForm({ eventId }: { eventId: string }) {
   const [status, setStatus] = useState<Status>({ type: 'idle' });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -16,7 +15,7 @@ export function ReservationForm() {
       name: String(formData.get('name') ?? ''),
       email: String(formData.get('email') ?? ''),
       tickets: Number(formData.get('tickets') ?? 1),
-      eventId: String(formData.get('eventId') ?? '')
+      eventId
     };
 
     const response = await fetch('/api/reservations', {
@@ -40,6 +39,7 @@ export function ReservationForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-6 shadow-card">
+      <input type="hidden" name="eventId" value={eventId} />
       <div>
         <label htmlFor="name" className="mb-1 block text-sm font-medium">
           Name
@@ -71,19 +71,6 @@ export function ReservationForm() {
           required
           className="w-full rounded-lg border border-zinc-300 px-3 py-2"
         />
-      </div>
-      <div>
-        <label htmlFor="eventId" className="mb-1 block text-sm font-medium">
-          Event
-        </label>
-        <select id="eventId" name="eventId" required className="w-full rounded-lg border border-zinc-300 px-3 py-2">
-          <option value="">Bitte auswählen</option>
-          {events.map((entry) => (
-            <option value={entry.id} key={entry.id}>
-              {entry.title} ({entry.date})
-            </option>
-          ))}
-        </select>
       </div>
       <p className="text-xs text-zinc-500">
         Mit Absenden akzeptierst du die Verarbeitung deiner Daten zur Ticketreservierung gemäß

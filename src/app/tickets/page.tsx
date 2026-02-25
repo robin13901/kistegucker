@@ -1,6 +1,24 @@
 import { ReservationForm } from '@/components/reservation-form';
+import { formatDateTime } from '@/lib/date-time';
+import { events } from '@/lib/mock-data';
 
 export default function TicketsPage() {
+    const upcomingEvent = events
+    .filter((event) => !event.is_past)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+  if (!upcomingEvent) {
+    return (
+      <div className="container-default py-12">
+        <h1 className="text-3xl font-bold">Ticket-Reservierung</h1>
+        <p className="mt-3 text-zinc-700">
+          Aktuell gibt es keine kommende Aufführung. Sobald eine neue Aufführung feststeht, kannst
+          du hier wieder reservieren.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="container-default grid gap-8 py-12 md:grid-cols-[1fr_1.2fr]">
       <section>
@@ -9,13 +27,9 @@ export default function TicketsPage() {
           Reserviere deine Plätze einfach online. Du erhältst eine automatische Bestätigung per
           E-Mail.
         </p>
-        <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-zinc-600">
-          <li>SSL-gesicherte Übertragung über Vercel</li>
-          <li>Speicherung in Supabase (EU-Region empfohlen)</li>
-          <li>DSGVO-konformer Umgang mit Kontaktdaten</li>
-        </ul>
+        <p className="mt-2 text-sm text-zinc-600">{formatDateTime(upcomingEvent.date, upcomingEvent.time)}</p>
       </section>
-      <ReservationForm />
+      <ReservationForm eventId={upcomingEvent.id} />
     </div>
   );
 }

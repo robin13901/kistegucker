@@ -15,7 +15,11 @@ export type Event = {
   date: string;
   time: string;
   venue: string;
-  cast: string[];
+  cast: Array<{
+    member_id: string;
+    actor: string;
+    role: string;
+  }>;
   gallery: string[];
   ticket_url?: string;
   is_past: boolean;

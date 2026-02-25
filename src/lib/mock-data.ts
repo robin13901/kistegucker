@@ -48,8 +48,12 @@ export const events: Event[] = [
       'Eine poetische Komödie unter freiem Himmel mit Live-Musik und neuem Bühnenbild.',
     date: '2026-06-20',
     time: '19:30',
-    venue: 'Kulturhalle Linsengericht',
-    cast: ['Anna Weber', 'Sofia Klein', 'Markus Dietz'],
+    venue: 'Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)',
+    cast: [
+      { member_id: '1', actor: 'Anna Weber', role: 'Titania' },
+      { member_id: '3', actor: 'Sofia Klein', role: 'Hermia' },
+      { member_id: '2', actor: 'Markus Dietz', role: 'Puck' }
+    ],
     gallery: [
       'https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=1200&q=80'
@@ -65,7 +69,10 @@ export const events: Event[] = [
     date: '2025-11-14',
     time: '20:00',
     venue: 'Bürgersaal Altenhaßlau',
-    cast: ['Markus Dietz', 'Sofia Klein'],
+    cast: [
+      { member_id: '2', actor: 'Markus Dietz', role: 'Anton Antonowitsch' },
+      { member_id: '3', actor: 'Sofia Klein', role: 'Anna Andrejewna' }
+    ],
     gallery: [
       'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=1200&q=80'
     ],

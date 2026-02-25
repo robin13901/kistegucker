@@ -53,7 +53,7 @@ export function AdminDashboard() {
 
     setState((prev) => ({
       ...prev,
-      feedback: response.ok ? 'Event erstellt.' : 'Event konnte nicht erstellt werden.'
+      feedback: response.ok ? 'Aufführung erstellt.' : 'Aufführung konnte nicht erstellt werden.'
     }));
   }
 
@@ -84,7 +84,7 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl bg-white p-6 shadow-card">
-        <h2 className="text-xl font-semibold">Events erstellen</h2>
+        <h2 className="text-xl font-semibold">Aufführungen erstellen</h2>
         <form onSubmit={createEvent} className="mt-4 grid gap-3 md:grid-cols-2">
           <input name="title" required placeholder="Titel" className="rounded-lg border border-zinc-300 px-3 py-2" />
           <input name="slug" required placeholder="slug" className="rounded-lg border border-zinc-300 px-3 py-2" />

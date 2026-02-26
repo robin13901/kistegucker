@@ -110,6 +110,12 @@ async function validateEventPayload(body: Record<string, unknown>) {
   if (!payload.hero_image_url) {
     fieldErrors.hero_image_url = 'Bitte ein Titelbild hochladen.';
   }
+  if (!Number.isFinite(payload.total_seats) || payload.total_seats < 1) {
+    fieldErrors.total_seats = 'Bitte die Gesamtanzahl Plätze angeben.';
+  }
+  if (!Number.isFinite(payload.online_seat_limit) || payload.online_seat_limit < 1) {
+    fieldErrors.online_seat_limit = 'Bitte die Anzahl Online-Reservierungen angeben.';
+  }
 
   if (payload.online_seat_limit > payload.total_seats) {
     fieldErrors.online_seat_limit = 'Online-Reservierungen dürfen nicht höher als die Gesamtplätze sein.';

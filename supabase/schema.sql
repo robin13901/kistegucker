@@ -16,10 +16,10 @@ create table if not exists public.events (
   slug text unique not null,
   title text not null,
   description text not null,
-  date date not null,
-  time time not null,
+  event_date date not null,
+  event_time time not null,
   venue text not null,
-  cast text[] not null default '{}',
+  cast_members text[] not null default '{}',
   gallery text[] not null default '{}',
   is_past boolean not null default false,
   created_at timestamptz not null default now()
@@ -34,10 +34,12 @@ create table if not exists public.reservations (
   created_at timestamptz not null default now()
 );
 
+-- Enable Row Level Security
 alter table public.members enable row level security;
 alter table public.events enable row level security;
 alter table public.reservations enable row level security;
 
+-- Policies
 create policy "public read events" on public.events
 for select using (true);
 
@@ -57,7 +59,3 @@ with check ((auth.jwt() ->> 'role') = 'admin');
 
 create policy "admin read reservations" on public.reservations
 for select using ((auth.jwt() ->> 'role') = 'admin');
-
-insert into storage.buckets (id, name, public)
-values ('member-images', 'member-images', true), ('event-images', 'event-images', true)
-on conflict (id) do nothing;

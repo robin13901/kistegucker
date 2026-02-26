@@ -25,10 +25,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-const payload = {
+  const payload = {
     name: String(body.name ?? '').trim(),
-    description: String(body.description ?? '').trim(),
-    bio: String(body.bio ?? '').trim(),
+    description: String(body.description ?? body.bio ?? '').trim(),
+    bio: String(body.bio ?? body.description ?? '').trim(),
     image_url: body.image_url || null,
     club_roles: Array.isArray(body.club_roles) ? body.club_roles : [],
     participations: Array.isArray(body.participations) ? body.participations : []
@@ -60,8 +60,8 @@ export async function PUT(request: Request) {
     .from('members')
     .update({
       name: String(body.name ?? '').trim(),
-      description: String(body.description ?? '').trim(),
-      bio: String(body.bio ?? '').trim(),
+      description: String(body.description ?? body.bio ?? '').trim(),
+      bio: String(body.bio ?? body.description ?? '').trim(),
       image_url: body.image_url || null,
       club_roles: Array.isArray(body.club_roles) ? body.club_roles : [],
       participations: Array.isArray(body.participations) ? body.participations : []

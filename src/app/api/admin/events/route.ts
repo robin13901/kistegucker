@@ -43,14 +43,14 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-const payload = {
+  const payload = {
     title: String(body.title ?? '').trim(),
     slug: toSlug(String(body.title ?? '')),
     description: String(body.description ?? '').trim(),
     event_date: body.event_date,
     performance_time: body.performance_time,
     admission_time: body.admission_time,
-    venue: DEFAULT_VENUE,
+    venue: String(body.venue ?? '').trim() || DEFAULT_VENUE,
     hero_image_url: body.hero_image_url || null,
     cast_entries: Array.isArray(body.cast_entries) ? body.cast_entries : [],
     total_seats: Number(body.total_seats ?? 0),
@@ -89,7 +89,7 @@ export async function PUT(request: Request) {
       event_date: body.event_date,
       performance_time: body.performance_time,
       admission_time: body.admission_time,
-      venue: DEFAULT_VENUE,
+      venue: String(body.venue ?? '').trim() || DEFAULT_VENUE,
       hero_image_url: body.hero_image_url || null,
       cast_entries: Array.isArray(body.cast_entries) ? body.cast_entries : [],
       total_seats: Number(body.total_seats ?? 0),

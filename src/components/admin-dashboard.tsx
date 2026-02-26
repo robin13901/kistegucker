@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, FormEvent, InputHTMLAttributes, TextareaHTMLAttributes, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, InputHTMLAttributes, TextareaHTMLAttributes, useMemo, useRef, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 type AdminState = {
@@ -22,6 +22,7 @@ type EventForm = {
   admission_time: string;
   total_seats: number;
   online_seat_limit: number;
+  venue: string;
   hero_image_url: string;
   cast_entries: CastEntry[];
   is_past: boolean;
@@ -37,6 +38,8 @@ type MemberForm = {
   participations: Participation[];
 };
 
+const DEFAULT_VENUE = 'Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)';
+
 const initialEvent: EventForm = {
   title: '',
   description: '',
@@ -45,6 +48,7 @@ const initialEvent: EventForm = {
   admission_time: '',
   total_seats: 250,
   online_seat_limit: 200,
+  venue: DEFAULT_VENUE,
   hero_image_url: '',
   cast_entries: [{ member_name: '', role: '' }],
   is_past: false
@@ -59,43 +63,39 @@ const initialMember: MemberForm = {
   participations: [{ piece: '', role: '' }]
 };
 
-function FloatingInput(props: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  const { label, id, ...rest } = props;
+function FieldInput(props: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
+  const { label, id, hint, className = '', ...rest } = props;
   return (
-    <div className="relative">
+    <label htmlFor={id} className="flex min-h-[84px] flex-col gap-1">
+      <span className="text-sm font-medium text-zinc-700">{label}</span>
       <input
         id={id}
         {...rest}
-        placeholder=" "
-        className="peer w-full rounded-lg border border-zinc-300 bg-white px-3 pb-2 pt-5"
+        className={`w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-left outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 ${className}`}
       />
-      <label
-        htmlFor={id}
-        className="pointer-events-none absolute left-3 top-2 text-xs text-zinc-500 transition peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
-      >
-        {label}
-      </label>
-    </div>
+      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+    </label>
   );
 }
 
-function FloatingTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) {
-  const { label, id, ...rest } = props;
+function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; hint?: string }) {
+  const { label, id, hint, className = '', onInput, ...rest } = props;
   return (
-    <div className="relative">
+    <label htmlFor={id} className="flex flex-col gap-1">
+      <span className="text-sm font-medium text-zinc-700">{label}</span>
       <textarea
         id={id}
         {...rest}
-        placeholder=" "
-        className="peer w-full rounded-lg border border-zinc-300 bg-white px-3 pb-2 pt-5"
+        onInput={(event) => {
+          const target = event.currentTarget;
+          target.style.height = 'auto';
+          target.style.height = `${target.scrollHeight}px`;
+          onInput?.(event);
+        }}
+        className={`w-full resize-none overflow-hidden rounded-xl border border-zinc-300 bg-white px-3 py-2 text-left outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 ${className}`}
       />
-      <label
-        htmlFor={id}
-        className="pointer-events-none absolute left-3 top-2 text-xs text-zinc-500 transition peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
-      >
-        {label}
-      </label>
-    </div>
+      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+    </label>
   );
 }
 
@@ -108,6 +108,8 @@ export function AdminDashboard() {
   const [members, setMembers] = useState<MemberForm[]>([]);
   const [reservations, setReservations] = useState<Array<Record<string, unknown>>>([]);
   const [selectedReservationEventId, setSelectedReservationEventId] = useState<string>('');
+  const eventImageInputRef = useRef<HTMLInputElement | null>(null);
+  const memberImageInputRef = useRef<HTMLInputElement | null>(null);
   const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const supabase = useMemo(() => (hasSupabaseConfig ? createClientComponentClient() : null), [hasSupabaseConfig]);
 
@@ -153,7 +155,7 @@ export function AdminDashboard() {
     }
 
     await loadData();
-    setState((prev) => ({ ...prev, loggedIn: true, feedback: 'Login erfolgreich.' }));
+    setState((prev) => ({ ...prev, loggedIn: true, feedback: undefined }));
   }
 
   async function uploadImage(file: File) {
@@ -179,13 +181,14 @@ export function AdminDashboard() {
         setMemberForm((prev) => ({ ...prev, image_url: url }));
       }
     } catch {
-      setState((prev) => ({ ...prev, feedback: 'Bild konnte nicht hochgeladen werden. Bitte URL manuell eintragen.' }));
+      setState((prev) => ({ ...prev, feedback: 'Bild konnte nicht hochgeladen werden.' }));
     }
   }
 
   async function saveEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-const endpoint = '/api/admin/events';
+
+    const endpoint = '/api/admin/events';
     const method = eventForm.id ? 'PUT' : 'POST';
     const response = await fetch(endpoint, {
       method,
@@ -274,25 +277,36 @@ const endpoint = '/api/admin/events';
         <section className="rounded-2xl bg-white p-6 shadow-card">
           <h2 className="text-xl font-semibold">Aufführungen verwalten</h2>
           <form onSubmit={saveEvent} className="mt-4 grid gap-3 md:grid-cols-2">
-            <FloatingInput id="event-title" label="Titel der Aufführung" value={eventForm.title} onChange={(event) => setEventForm((prev) => ({ ...prev, title: event.target.value }))} required />
-            <FloatingInput id="event-date" type="date" label="Aufführungsdatum" value={eventForm.event_date} onChange={(event) => setEventForm((prev) => ({ ...prev, event_date: event.target.value }))} required />
-            <FloatingInput id="event-performance-time" type="time" label="Aufführungszeit" value={eventForm.performance_time} onChange={(event) => setEventForm((prev) => ({ ...prev, performance_time: event.target.value }))} required />
-            <FloatingInput id="event-admission-time" type="time" label="Einlassbeginn" value={eventForm.admission_time} onChange={(event) => setEventForm((prev) => ({ ...prev, admission_time: event.target.value }))} required />
-            <FloatingInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: Number(event.target.value) }))} required />
-            <FloatingInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: Number(event.target.value) }))} required />
-            <input value="Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)" disabled className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-zinc-600" />
-            <FloatingInput id="event-image" label="Titelbild-URL" value={eventForm.hero_image_url} onChange={(event) => setEventForm((prev) => ({ ...prev, hero_image_url: event.target.value }))} />
+            <FieldInput id="event-title" label="Titel des Theaterstücks" value={eventForm.title} onChange={(event) => setEventForm((prev) => ({ ...prev, title: event.target.value }))} required hint="Kann bei mehreren Aufführungen wiederverwendet werden." />
+            <FieldInput id="event-venue" label="Ort" value={eventForm.venue} onChange={(event) => setEventForm((prev) => ({ ...prev, venue: event.target.value }))} required />
+            <FieldInput id="event-date" type="date" label="Aufführungsdatum" value={eventForm.event_date} onChange={(event) => setEventForm((prev) => ({ ...prev, event_date: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
+            <FieldInput id="event-performance-time" type="time" label="Aufführungszeit" value={eventForm.performance_time} onChange={(event) => setEventForm((prev) => ({ ...prev, performance_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
+            <FieldInput id="event-admission-time" type="time" label="Einlassbeginn" value={eventForm.admission_time} onChange={(event) => setEventForm((prev) => ({ ...prev, admission_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
+            <FieldInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: Number(event.target.value) }))} required />
+            <FieldInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: Number(event.target.value) }))} required />
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium">Titelbild hochladen</label>
-              <input type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'event')} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+              <input ref={eventImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'event')} className="hidden" />
+              <button type="button" onClick={() => eventImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">
+                Bild auswählen
+              </button>
+              {eventForm.hero_image_url && <img src={eventForm.hero_image_url} alt="Titelbild Vorschau" className="mt-2 h-40 w-full rounded-xl border border-zinc-200 object-cover" />}
             </div>
-            <FloatingTextarea id="event-description" label="Beschreibung" value={eventForm.description} onChange={(event) => setEventForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
+            <AutoTextarea id="event-description" label="Beschreibung" value={eventForm.description} onChange={(event) => setEventForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
             <div className="md:col-span-2 space-y-2">
               <p className="text-sm font-medium">Besetzung (Rollenname + Mitglied)</p>
               {eventForm.cast_entries.map((entry, index) => (
-                <div key={`${index}-${entry.member_name}`} className="grid gap-2 md:grid-cols-2">
-                  <FloatingInput label="Rollenname" value={entry.role} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
-                  <FloatingInput label="Mitglied" value={entry.member_name} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))} />
+                <div key={index} className="grid gap-2 md:grid-cols-2">
+                  <FieldInput label="Rollenname" value={entry.role} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
+                  <label className="flex min-h-[84px] flex-col gap-1">
+                    <span className="text-sm font-medium text-zinc-700">Mitglied</span>
+                    <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.member_name} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))}>
+                      <option value="">Mitglied auswählen</option>
+                      {members.map((member) => (
+                        <option key={member.id} value={member.name}>{member.name}</option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
               ))}
               <button type="button" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { role: '', member_name: '' }] }))} className="rounded-lg border px-3 py-2 text-sm">Besetzungszeile hinzufügen</button>
@@ -322,27 +336,28 @@ const endpoint = '/api/admin/events';
         <section className="rounded-2xl bg-white p-6 shadow-card">
           <h2 className="text-xl font-semibold">Mitglieder verwalten</h2>
           <form onSubmit={saveMember} className="mt-4 grid gap-3 md:grid-cols-2">
-            <FloatingInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
-            <FloatingInput id="member-description" label="Kurzbeschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value }))} required />
-            <FloatingTextarea id="member-bio" label="Beschreibung" value={memberForm.bio} onChange={(event) => setMemberForm((prev) => ({ ...prev, bio: event.target.value }))} required className="md:col-span-2 min-h-[100px]" />
-            <FloatingInput id="member-image" label="Foto-URL" value={memberForm.image_url} onChange={(event) => setMemberForm((prev) => ({ ...prev, image_url: event.target.value }))} />
-            <div>
+            <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium">Foto hochladen</label>
-              <input type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'member')} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+              <input ref={memberImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'member')} className="hidden" />
+              <button type="button" onClick={() => memberImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">
+                Bild auswählen
+              </button>
+              {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 h-40 w-full rounded-xl border border-zinc-200 object-cover" />}
             </div>
+            <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
+            <AutoTextarea id="member-bio" label="Beschreibung / Bio" value={memberForm.bio} onChange={(event) => setMemberForm((prev) => ({ ...prev, bio: event.target.value, description: event.target.value }))} required className="md:col-span-2 min-h-[100px]" />
             <div className="md:col-span-2 space-y-2">
               <p className="text-sm font-medium">Rollen im Verein</p>
               {memberForm.club_roles.map((role, index) => (
-                <FloatingInput key={`${index}-${role}`} label="Vereinsrolle" value={role} onChange={(event) => setMemberForm((prev) => ({ ...prev, club_roles: prev.club_roles.map((entry, entryIndex) => entryIndex === index ? event.target.value : entry) }))} />
-              ))}
+                <FieldInput key={index} label="Vereinsrolle" value={role} onChange={(event) => setMemberForm((prev) => ({ ...prev, club_roles: prev.club_roles.map((entry, entryIndex) => entryIndex === index ? event.target.value : entry) }))} />              ))}
               <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setMemberForm((prev) => ({ ...prev, club_roles: [...prev.club_roles, ''] }))}>Rolle hinzufügen</button>
             </div>
             <div className="md:col-span-2 space-y-2">
               <p className="text-sm font-medium">Mitgespielte Stücke (Stück + Rolle)</p>
               {memberForm.participations.map((entry, index) => (
-                <div key={`${index}-${entry.piece}`} className="grid gap-2 md:grid-cols-2">
-                  <FloatingInput label="Stück" value={entry.piece} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, piece: event.target.value } : row) }))} />
-                  <FloatingInput label="Rolle im Stück" value={entry.role} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
+                <div key={index} className="grid gap-2 md:grid-cols-2">
+                  <FieldInput label="Stück" value={entry.piece} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, piece: event.target.value } : row) }))} />
+                  <FieldInput label="Rolle im Stück" value={entry.role} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
                 </div>
               ))}
               <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setMemberForm((prev) => ({ ...prev, participations: [...prev.participations, { piece: '', role: '' }] }))}>Eintrag hinzufügen</button>

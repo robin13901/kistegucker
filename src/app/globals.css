@@ -18,3 +18,22 @@ body {
 .container-default {
   @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
 }
+
+input[type='date'],
+input[type='time'] {
+  min-height: 44px;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  border-radius: 9999px;
+  padding: 0.25rem;
+  background-color: #f4f4f5;
+  cursor: pointer;
+}
+
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+}

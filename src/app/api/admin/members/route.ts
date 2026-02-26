@@ -1,6 +1,63 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 
+type Participation = { piece: string; role: string };
+
+type MemberPayload = {
+  name: string;
+  description: string;
+  bio: string;
+  image_url: string | null;
+  club_roles: string[];
+  participations: Participation[];
+};
+
+function validateMemberPayload(body: Record<string, unknown>) {
+  const fieldErrors: Record<string, string> = {};
+
+  const payload: MemberPayload = {
+    name: String(body.name ?? '').trim(),
+    description: String(body.description ?? body.bio ?? '').trim(),
+    bio: String(body.bio ?? body.description ?? '').trim(),
+    image_url: String(body.image_url ?? '').trim() || null,
+    club_roles: Array.isArray(body.club_roles)
+      ? body.club_roles.map((role) => String(role).trim()).filter(Boolean)
+      : [],
+    participations: Array.isArray(body.participations)
+      ? body.participations
+          .map((entry) => ({
+            piece: String((entry as Participation)?.piece ?? '').trim(),
+            role: String((entry as Participation)?.role ?? '').trim()
+          }))
+          .filter((entry) => entry.piece || entry.role)
+      : []
+  };
+
+  if (!payload.name) {
+    fieldErrors.name = 'Bitte einen Namen eingeben.';
+  }
+
+  if (!payload.bio) {
+    fieldErrors.bio = 'Bitte eine Beschreibung eingeben.';
+  }
+
+  if (!payload.image_url) {
+    fieldErrors.image_url = 'Bitte ein Foto hochladen.';
+  }
+
+  payload.participations.forEach((entry, index) => {
+    if (!entry.piece) {
+      fieldErrors[`participations.${index}.piece`] = 'Bitte ein Stück auswählen.';
+    }
+
+    if (!entry.role) {
+      fieldErrors[`participations.${index}.role`] = 'Bitte eine Rolle eingeben.';
+    }
+  });
+
+  return { payload, fieldErrors };
+}
+
 export async function GET() {
   const admin = await requireAdmin();
 
@@ -24,20 +81,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
   }
 
-  const body = await request.json();
-  const payload = {
-    name: String(body.name ?? '').trim(),
-    description: String(body.description ?? body.bio ?? '').trim(),
-    bio: String(body.bio ?? body.description ?? '').trim(),
-    image_url: body.image_url || null,
-    club_roles: Array.isArray(body.club_roles) ? body.club_roles : [],
-    participations: Array.isArray(body.participations) ? body.participations : []
-  };
+  const body = (await request.json()) as Record<string, unknown>;
+  const { payload, fieldErrors } = validateMemberPayload(body);
+
+  if (Object.keys(fieldErrors).length) {
+    return NextResponse.json({ error: 'Bitte korrigiere die Eingaben im Formular.', fieldErrors }, { status: 400 });
+  }
 
   const { data, error } = await admin.supabase.from('members').insert(payload).select('*').single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
   }
 
   return NextResponse.json({ data });
@@ -50,28 +104,27 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = (await request.json()) as Record<string, unknown>;
 
   if (!body.id) {
     return NextResponse.json({ error: 'Mitglieds-ID fehlt' }, { status: 400 });
   }
 
+  const { payload, fieldErrors } = validateMemberPayload(body);
+
+  if (Object.keys(fieldErrors).length) {
+    return NextResponse.json({ error: 'Bitte korrigiere die Eingaben im Formular.', fieldErrors }, { status: 400 });
+  }
+
   const { data, error } = await admin.supabase
     .from('members')
-    .update({
-      name: String(body.name ?? '').trim(),
-      description: String(body.description ?? body.bio ?? '').trim(),
-      bio: String(body.bio ?? body.description ?? '').trim(),
-      image_url: body.image_url || null,
-      club_roles: Array.isArray(body.club_roles) ? body.club_roles : [],
-      participations: Array.isArray(body.participations) ? body.participations : []
-    })
+    .update(payload)
     .eq('id', body.id)
     .select('*')
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
   }
 
   return NextResponse.json({ data });

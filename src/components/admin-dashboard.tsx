@@ -12,6 +12,7 @@ type AdminState = {
 
 type CastEntry = { member_name: string; role: string };
 type Participation = { piece: string; role: string };
+type ValidationErrors = Record<string, string>;
 
 type EventForm = {
   id?: string;
@@ -63,6 +64,17 @@ const initialMember: MemberForm = {
   participations: [{ piece: '', role: '' }]
 };
 
+const allowedImageRatios = [1, 4 / 3, 16 / 9];
+
+function isAllowedImageRatio(width: number, height: number) {
+  if (width <= 0 || height <= 0) {
+    return false;
+  }
+
+  const ratio = width / height;
+  return allowedImageRatios.some((allowed) => Math.abs(ratio - allowed) <= 0.03);
+}
+
 function FieldInput(props: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
   const { label, id, hint, className = '', ...rest } = props;
   return (
@@ -108,6 +120,10 @@ export function AdminDashboard() {
   const [members, setMembers] = useState<MemberForm[]>([]);
   const [reservations, setReservations] = useState<Array<Record<string, unknown>>>([]);
   const [selectedReservationEventId, setSelectedReservationEventId] = useState<string>('');
+  const [eventErrors, setEventErrors] = useState<ValidationErrors>({});
+  const [memberErrors, setMemberErrors] = useState<ValidationErrors>({});
+  const [castDraft, setCastDraft] = useState<CastEntry>({ member_name: '', role: '' });
+  const [clubRoleDraft, setClubRoleDraft] = useState('');
   const eventImageInputRef = useRef<HTMLInputElement | null>(null);
   const memberImageInputRef = useRef<HTMLInputElement | null>(null);
   const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -174,10 +190,28 @@ export function AdminDashboard() {
     }
 
     try {
+       const dimensionsAreValid = await new Promise<boolean>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(isAllowedImageRatio(img.width, img.height));
+        img.onerror = () => resolve(false);
+        img.src = URL.createObjectURL(file);
+      });
+
+      if (!dimensionsAreValid) {
+        const errorMessage = 'Bitte ein Bild im Format 1:1, 4:3 oder 16:9 hochladen.';
+        if (type === 'event') {
+          setEventErrors((prev) => ({ ...prev, hero_image_url: errorMessage }));
+        } else {
+          setMemberErrors((prev) => ({ ...prev, image_url: errorMessage }));
+        }
+        return;
+      }
       const url = await uploadImage(file);
       if (type === 'event') {
+        setEventErrors((prev) => ({ ...prev, hero_image_url: '' }));
         setEventForm((prev) => ({ ...prev, hero_image_url: url }));
       } else {
+        setMemberErrors((prev) => ({ ...prev, image_url: '' }));
         setMemberForm((prev) => ({ ...prev, image_url: url }));
       }
     } catch {
@@ -188,45 +222,138 @@ export function AdminDashboard() {
   async function saveEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    setEventErrors({});
+
+    const payload = {
+      ...eventForm,
+      cast_entries: eventForm.cast_entries.filter((entry) => entry.member_name.trim() || entry.role.trim())
+    };
+
+    const localErrors: ValidationErrors = {};
+
+    if (!payload.title.trim()) {
+      localErrors.title = 'Bitte einen Titel eingeben.';
+    }
+    if (!payload.event_date) {
+      localErrors.event_date = 'Bitte ein Aufführungsdatum wählen.';
+    }
+    if (!payload.performance_time) {
+      localErrors.performance_time = 'Bitte eine Aufführungszeit angeben.';
+    }
+    if (!payload.admission_time) {
+      localErrors.admission_time = 'Bitte eine Einlasszeit angeben.';
+    }
+    if (!payload.description.trim()) {
+      localErrors.description = 'Bitte eine Beschreibung eingeben.';
+    }
+    if (!payload.hero_image_url) {
+      localErrors.hero_image_url = 'Bitte ein Titelbild hochladen.';
+    }
+
+    payload.cast_entries.forEach((entry, index) => {
+      if (!entry.role.trim()) {
+        localErrors[`cast_entries.${index}.role`] = 'Bitte einen Rollennamen angeben.';
+      }
+      if (!entry.member_name.trim()) {
+        localErrors[`cast_entries.${index}.member_name`] = 'Bitte ein Mitglied auswählen.';
+      }
+    });
+
+    if (Object.values(localErrors).some(Boolean)) {
+      setEventErrors(localErrors);
+      setState((prev) => ({ ...prev, feedback: 'Bitte korrigiere die markierten Felder im Aufführungsformular.' }));
+      return;
+    }
+
     const endpoint = '/api/admin/events';
     const method = eventForm.id ? 'PUT' : 'POST';
     const response = await fetch(endpoint, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(eventForm)
+      body: JSON.stringify(payload)
     });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setEventErrors(result.fieldErrors ?? {});
+      setState((prev) => ({ ...prev, feedback: result.error ?? 'Aufführung konnte nicht gespeichert werden.' }));
+      return;
+    }
 
     setState((prev) => ({
       ...prev,
-      feedback: response.ok ? 'Aufführung gespeichert.' : 'Aufführung konnte nicht gespeichert werden.'
+      feedback: 'Aufführung gespeichert.'
     }));
 
-    if (response.ok) {
-      setEventForm(initialEvent);
-      await loadData();
-    }
+    setEventForm(initialEvent);
+    setCastDraft({ member_name: '', role: '' });
+    await loadData();
   }
 
   async function saveMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    setMemberErrors({});
+
+    const payload = {
+      ...memberForm,
+      description: memberForm.bio,
+      club_roles: memberForm.club_roles.filter((role) => role.trim()),
+      participations: memberForm.participations.filter((entry) => entry.piece.trim() || entry.role.trim())
+    };
+
+    const localErrors: ValidationErrors = {};
+
+    if (!payload.name.trim()) {
+      localErrors.name = 'Bitte einen Namen eingeben.';
+    }
+    if (!payload.bio.trim()) {
+      localErrors.bio = 'Bitte eine Beschreibung eingeben.';
+    }
+    if (!payload.image_url) {
+      localErrors.image_url = 'Bitte ein Foto hochladen.';
+    }
+
+    payload.participations.forEach((entry, index) => {
+      if (!entry.piece.trim()) {
+        localErrors[`participations.${index}.piece`] = 'Bitte ein Stück auswählen.';
+      }
+      if (!entry.role.trim()) {
+        localErrors[`participations.${index}.role`] = 'Bitte eine Rolle eingeben.';
+      }
+    });
+
+    if (Object.values(localErrors).some(Boolean)) {
+      setMemberErrors(localErrors);
+      setState((prev) => ({ ...prev, feedback: 'Bitte korrigiere die markierten Felder im Mitgliederformular.' }));
+      return;
+    }
 
     const endpoint = '/api/admin/members';
     const method = memberForm.id ? 'PUT' : 'POST';
     const response = await fetch(endpoint, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(memberForm)
+      body: JSON.stringify(payload)
     });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setMemberErrors(result.fieldErrors ?? {});
+      setState((prev) => ({ ...prev, feedback: result.error ?? 'Mitglied konnte nicht gespeichert werden.' }));
+      return;
+    }
 
     setState((prev) => ({
       ...prev,
-      feedback: response.ok ? 'Mitglied gespeichert.' : 'Mitglied konnte nicht gespeichert werden.'
+      feedback: 'Mitglied gespeichert.'
     }));
 
-    if (response.ok) {
-      setMemberForm(initialMember);
-      await loadData();
-    }
+    setMemberForm(initialMember);
+    setClubRoleDraft('');
+    await loadData();
   }
 
   async function deleteReservation(id: string) {
@@ -277,36 +404,66 @@ export function AdminDashboard() {
         <section className="rounded-2xl bg-white p-6 shadow-card">
           <h2 className="text-xl font-semibold">Aufführungen verwalten</h2>
           <form onSubmit={saveEvent} className="mt-4 grid gap-3 md:grid-cols-2">
-            <FieldInput id="event-title" label="Titel des Theaterstücks" value={eventForm.title} onChange={(event) => setEventForm((prev) => ({ ...prev, title: event.target.value }))} required hint="Kann bei mehreren Aufführungen wiederverwendet werden." />
-            <FieldInput id="event-venue" label="Ort" value={eventForm.venue} onChange={(event) => setEventForm((prev) => ({ ...prev, venue: event.target.value }))} required />
-            <FieldInput id="event-date" type="date" label="Aufführungsdatum" value={eventForm.event_date} onChange={(event) => setEventForm((prev) => ({ ...prev, event_date: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
-            <FieldInput id="event-performance-time" type="time" label="Aufführungszeit" value={eventForm.performance_time} onChange={(event) => setEventForm((prev) => ({ ...prev, performance_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
-            <FieldInput id="event-admission-time" type="time" label="Einlassbeginn" value={eventForm.admission_time} onChange={(event) => setEventForm((prev) => ({ ...prev, admission_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
-            <FieldInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: Number(event.target.value) }))} required />
-            <FieldInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: Number(event.target.value) }))} required />
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium">Titelbild hochladen</label>
               <input ref={eventImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'event')} className="hidden" />
               <button type="button" onClick={() => eventImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">
                 Bild auswählen
-              </button>
-              {eventForm.hero_image_url && <img src={eventForm.hero_image_url} alt="Titelbild Vorschau" className="mt-2 h-40 w-full rounded-xl border border-zinc-200 object-cover" />}
+              </button> 
+               {eventErrors.hero_image_url && <p className="mt-1 text-xs text-red-600">{eventErrors.hero_image_url}</p>}
+              {eventForm.hero_image_url && <img src={eventForm.hero_image_url} alt="Titelbild Vorschau" className="mt-2 aspect-video w-full rounded-xl border border-zinc-200 object-cover" />}
             </div>
+            <FieldInput id="event-title" label="Titel des Theaterstücks" value={eventForm.title} onChange={(event) => setEventForm((prev) => ({ ...prev, title: event.target.value }))} required hint="Kann bei mehreren Aufführungen wiederverwendet werden." />
+            {eventErrors.title && <p className="text-xs text-red-600">{eventErrors.title}</p>}
+            <FieldInput id="event-venue" label="Ort" value={eventForm.venue} onChange={(event) => setEventForm((prev) => ({ ...prev, venue: event.target.value }))} required />
+            <FieldInput id="event-date" type="date" label="Aufführungsdatum" value={eventForm.event_date} onChange={(event) => setEventForm((prev) => ({ ...prev, event_date: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
+            {eventErrors.event_date && <p className="text-xs text-red-600">{eventErrors.event_date}</p>}
+            <FieldInput id="event-performance-time" type="time" label="Aufführungszeit" value={eventForm.performance_time} onChange={(event) => setEventForm((prev) => ({ ...prev, performance_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
+            {eventErrors.performance_time && <p className="text-xs text-red-600">{eventErrors.performance_time}</p>}
+            <FieldInput id="event-admission-time" type="time" label="Einlassbeginn" value={eventForm.admission_time} onChange={(event) => setEventForm((prev) => ({ ...prev, admission_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
+            {eventErrors.admission_time && <p className="text-xs text-red-600">{eventErrors.admission_time}</p>}
+            <FieldInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: Number(event.target.value) }))} required />
+            <FieldInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: Number(event.target.value) }))} required />
+            {eventErrors.online_seat_limit && <p className="text-xs text-red-600">{eventErrors.online_seat_limit}</p>}
             <AutoTextarea id="event-description" label="Beschreibung" value={eventForm.description} onChange={(event) => setEventForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
+            {eventErrors.description && <p className="text-xs text-red-600 md:col-span-2">{eventErrors.description}</p>}
             <div className="md:col-span-2 space-y-2">
               <p className="text-sm font-medium">Besetzung (Rollenname + Mitglied)</p>
               {eventForm.cast_entries.map((entry, index) => (
                 <div key={index} className="grid gap-2 md:grid-cols-2">
-                  <FieldInput label="Rollenname" value={entry.role} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
-                  <label className="flex min-h-[84px] flex-col gap-1">
-                    <span className="text-sm font-medium text-zinc-700">Mitglied</span>
-                    <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.member_name} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))}>
-                      <option value="">Mitglied auswählen</option>
-                      {members.map((member) => (
-                        <option key={member.id} value={member.name}>{member.name}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <p className="text-sm font-medium">Besetzung</p>
+              <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                <FieldInput label="Rollenname" value={castDraft.role} onChange={(event) => setCastDraft((prev) => ({ ...prev, role: event.target.value }))} />
+                <label className="flex min-h-[84px] flex-col gap-1">
+                  <span className="text-sm font-medium text-zinc-700">Mitglied</span>
+                  <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={castDraft.member_name} onChange={(event) => setCastDraft((prev) => ({ ...prev, member_name: event.target.value }))}>
+                    <option value="">Mitglied auswählen</option>
+                    {members.map((member) => (
+                      <option key={member.id} value={member.name}>{member.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="mb-2 rounded-lg border px-3 py-2 text-sm" onClick={() => {
+                  if (!castDraft.role.trim() || !castDraft.member_name.trim()) {
+                    setEventErrors((prev) => ({ ...prev, cast_draft: 'Bitte Rolle und Mitglied auswählen.' }));
+                    return;
+                  }
+                  setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { role: castDraft.role.trim(), member_name: castDraft.member_name.trim() }] }));
+                  setCastDraft({ role: '', member_name: '' });
+                  setEventErrors((prev) => ({ ...prev, cast_draft: '' }));
+                }}>Hinzufügen</button>
+              </div>
+              {eventErrors.cast_draft && <p className="text-xs text-red-600">{eventErrors.cast_draft}</p>}
+              {eventForm.cast_entries.length > 0 && (
+                <ul className="list-disc space-y-1 pl-6 text-sm text-zinc-700">
+                  {eventForm.cast_entries.map((entry, index) => (
+                    <li key={`${entry.member_name}-${entry.role}-${index}`} className="flex items-center justify-between gap-2">
+                      <span>{entry.role} – {entry.member_name}</span>
+                      <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs text-red-700" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
                 </div>
               ))}
               <button type="button" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { role: '', member_name: '' }] }))} className="rounded-lg border px-3 py-2 text-sm">Besetzungszeile hinzufügen</button>
@@ -342,22 +499,58 @@ export function AdminDashboard() {
               <button type="button" onClick={() => memberImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">
                 Bild auswählen
               </button>
-              {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 h-40 w-full rounded-xl border border-zinc-200 object-cover" />}
-            </div>
+              {memberErrors.image_url && <p className="mt-1 text-xs text-red-600">{memberErrors.image_url}</p>}
+              {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 aspect-[4/3] w-full rounded-xl border border-zinc-200 object-cover" />}            </div>
             <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
-            <AutoTextarea id="member-bio" label="Beschreibung / Bio" value={memberForm.bio} onChange={(event) => setMemberForm((prev) => ({ ...prev, bio: event.target.value, description: event.target.value }))} required className="md:col-span-2 min-h-[100px]" />
-            <div className="md:col-span-2 space-y-2">
+            {memberErrors.name && <p className="text-xs text-red-600">{memberErrors.name}</p>}
+            <AutoTextarea id="member-bio" label="Beschreibung" value={memberForm.bio} onChange={(event) => setMemberForm((prev) => ({ ...prev, bio: event.target.value, description: event.target.value }))} required className="md:col-span-2 min-h-[100px]" />
+            {memberErrors.bio && <p className="text-xs text-red-600 md:col-span-2">{memberErrors.bio}</p>}            <div className="md:col-span-2 space-y-2">
               <p className="text-sm font-medium">Rollen im Verein</p>
-              {memberForm.club_roles.map((role, index) => (
-                <FieldInput key={index} label="Vereinsrolle" value={role} onChange={(event) => setMemberForm((prev) => ({ ...prev, club_roles: prev.club_roles.map((entry, entryIndex) => entryIndex === index ? event.target.value : entry) }))} />              ))}
-              <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setMemberForm((prev) => ({ ...prev, club_roles: [...prev.club_roles, ''] }))}>Rolle hinzufügen</button>
+              <div className="flex gap-2">
+                <input
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  value={clubRoleDraft}
+                  onChange={(event) => setClubRoleDraft(event.target.value)}
+                  placeholder="Vereinsrolle eingeben"
+                />
+                <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => {
+                  if (!clubRoleDraft.trim()) {
+                    setMemberErrors((prev) => ({ ...prev, club_roles: 'Bitte eine Rolle eingeben.' }));
+                    return;
+                  }
+                  setMemberForm((prev) => ({ ...prev, club_roles: [...prev.club_roles.filter((role) => role.trim()), clubRoleDraft.trim()] }));
+                  setClubRoleDraft('');
+                  setMemberErrors((prev) => ({ ...prev, club_roles: '' }));
+                }}>Hinzufügen</button>
+              </div>
+              {memberErrors.club_roles && <p className="text-xs text-red-600">{memberErrors.club_roles}</p>}
+              <ul className="list-disc space-y-1 pl-6 text-sm text-zinc-700">
+                {memberForm.club_roles.filter((role) => role.trim()).map((role, index) => (
+                  <li key={`${role}-${index}`} className="flex items-center justify-between gap-2">
+                    <span>{role}</span>
+                    <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs text-red-700" onClick={() => setMemberForm((prev) => ({ ...prev, club_roles: prev.club_roles.filter((entry) => entry.trim()).filter((_, entryIndex) => entryIndex !== index) }))}>✕</button>
+                  </li>
+                ))}
+              </ul>
             </div>
             <div className="md:col-span-2 space-y-2">
-              <p className="text-sm font-medium">Mitgespielte Stücke (Stück + Rolle)</p>
+              <p className="text-sm font-medium">Mitgespielte Stücke</p>
               {memberForm.participations.map((entry, index) => (
-                <div key={index} className="grid gap-2 md:grid-cols-2">
-                  <FieldInput label="Stück" value={entry.piece} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, piece: event.target.value } : row) }))} />
+                                <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                  <label className="flex min-h-[84px] flex-col gap-1">
+                    <span className="text-sm font-medium text-zinc-700">Stück</span>
+                    <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.piece} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, piece: event.target.value } : row) }))}>
+                      <option value="">Stück auswählen</option>
+                      {events.map((savedEvent) => (
+                        <option key={savedEvent.id} value={savedEvent.title}>{savedEvent.title}</option>
+                      ))}
+                    </select>
+                  </label>
                   <FieldInput label="Rolle im Stück" value={entry.role} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
+                                  <button type="button" className="mb-2 h-9 w-9 rounded-full border text-sm text-red-700" onClick={() => setMemberForm((prev) => ({ ...prev, participations: prev.participations.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
+                  {(memberErrors[`participations.${index}.piece`] || memberErrors[`participations.${index}.role`]) && (
+                    <p className="text-xs text-red-600 md:col-span-3">{memberErrors[`participations.${index}.piece`] ?? memberErrors[`participations.${index}.role`]}</p>
+                  )}
                 </div>
               ))}
               <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setMemberForm((prev) => ({ ...prev, participations: [...prev.participations, { piece: '', role: '' }] }))}>Eintrag hinzufügen</button>

@@ -11,7 +11,9 @@ export async function requireAdmin() {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user || user.user_metadata?.role !== 'admin') {
+    const isAdmin = user && (user.app_metadata?.role === 'admin' || user.user_metadata?.role === 'admin');
+
+  if (!isAdmin) {
     return null;
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { getSupabaseClient } from '@/lib/supabase';
+import { FormEvent, useMemo, useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 type AdminState = {
   email: string;
@@ -12,10 +12,11 @@ type AdminState = {
 
 export function AdminDashboard() {
   const [state, setState] = useState<AdminState>({ email: '', password: '', loggedIn: false });
+  const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const supabase = useMemo(() => (hasSupabaseConfig ? createClientComponentClient() : null), [hasSupabaseConfig]);
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = getSupabaseClient();
 
     if (!supabase) {
       setState((prev) => ({ ...prev, feedback: 'Supabase ist nicht konfiguriert.' }));

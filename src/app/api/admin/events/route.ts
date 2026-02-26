@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     title: body.title,
     slug: body.slug,
     description: body.description,
-    date: body.date,
-    time: body.time,
+    event_date: body.date,
+    event_time: body.time,
     venue: body.venue
   });
 

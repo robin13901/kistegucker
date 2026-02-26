@@ -50,12 +50,12 @@ create policy "anon insert reservations" on public.reservations
 for insert with check (true);
 
 create policy "admin full access members" on public.members
-for all using ((auth.jwt() ->> 'role') = 'admin')
-with check ((auth.jwt() ->> 'role') = 'admin');
+for all using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 create policy "admin full access events" on public.events
-for all using ((auth.jwt() ->> 'role') = 'admin')
-with check ((auth.jwt() ->> 'role') = 'admin');
+for all using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 create policy "admin read reservations" on public.reservations
-for select using ((auth.jwt() ->> 'role') = 'admin');
+for select using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');

@@ -43,7 +43,7 @@ export default function HomePage() {
           <section className="space-y-6">
             <h2 className="text-2xl font-semibold">Demnächst bei uns</h2>
             <article className="rounded-2xl bg-white p-6 shadow-card">
-              <p className="text-sm text-zinc-500">{formatDateTime(upcoming.date, upcoming.time)}</p>
+              <p className="text-sm text-zinc-500">{formatDateTime(upcoming.date, upcoming.performance_time)}</p>
               <h3 className="mt-2 text-xl font-semibold">{upcoming.title}</h3>
               <p className="mt-2 text-zinc-700">{upcoming.description}</p>
               <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -65,7 +65,7 @@ export default function HomePage() {
           <div className="space-y-4">
             {past.map((event) => (
               <article key={event.id} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-card">
-                <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.time)}</p>
+                <p className="text-sm text-zinc-500">{formatDateTime(event.date, event.performance_time)}</p>
                 <h3 className="mt-2 text-xl font-semibold">{event.title}</h3>
                 <p className="mt-2 text-zinc-700">{event.description}</p>
                 <Link href={`/events/${event.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">

@@ -1,26 +1,32 @@
 export type Member = {
   id: string;
   name: string;
-  role: string;
+  description: string;
   bio: string;
   image_url: string;
-  played_works: Array<{ title: string; year: number }>;
+  club_roles: string[];
+  participations: Array<{ piece: string; role: string }>;
 };
 
 export type Event = {
   id: string;
   slug: string;
   title: string;
+  subtitle?: string;
   description: string;
   date: string;
-  time: string;
+  performance_time: string;
+  admission_time: string;
   venue: string;
+  hero_image_url?: string;
+  total_seats: number;
+  online_seat_limit: number;
+  reserved_online_tickets: number;
   cast: Array<{
-    member_id: string;
-    actor: string;
+    member_id?: string;
+    member_name: string;
     role: string;
   }>;
   gallery: string[];
-  ticket_url?: string;
   is_past: boolean;
 };

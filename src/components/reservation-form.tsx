@@ -67,7 +67,7 @@ export function ReservationForm({ eventId }: { eventId: string }) {
           name="tickets"
           type="number"
           min={1}
-          max={10}
+          max={4}
           required
           className="w-full rounded-lg border border-zinc-300 px-3 py-2"
         />

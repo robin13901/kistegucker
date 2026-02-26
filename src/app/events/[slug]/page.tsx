@@ -19,7 +19,7 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
     <div className="container-default space-y-8 py-12">
       <div>
         <p className="text-sm text-zinc-500">
-           {formatDateTime(event.date, event.time)}
+           {formatDateTime(event.date, event.performance_time)}
         </p>
         <h1 className="text-3xl font-bold">{event.title}</h1>
         <p className="mt-3 max-w-2xl text-zinc-700">{event.description}</p>
@@ -31,7 +31,7 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
           {event.cast.map((entry) => (
             <li key={`${entry.member_id}-${entry.role}`} className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
               <Link href={`/mitglieder#member-${entry.member_id}`} className="font-semibold text-accent">
-                {entry.actor}
+                {entry.member_name}
               </Link>{' '}
               <span className="text-zinc-500">als</span>{' '}
               <span className="font-semibold text-zinc-900">{entry.role}</span>
@@ -44,7 +44,10 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
         <section className="rounded-2xl bg-white p-5 shadow-card">
           <h2 className="text-xl font-semibold">Ort & Zeit</h2>
           <p className="mt-2 text-zinc-700">
-            <span className="font-semibold">Wann:</span> {formatDateTime(event.date, event.time)}
+            <span className="font-semibold">Wann:</span> {formatDateTime(event.date, event.performance_time)}
+          </p>
+          <p className="mt-1 text-zinc-700">
+            <span className="font-semibold">Einlass:</span> {event.admission_time} Uhr
           </p>
           <p className="mt-1 text-zinc-700">
             <span className="font-semibold">Wo:</span> {UPCOMING_LOCATION}

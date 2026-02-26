@@ -16,12 +16,12 @@ export default function MembersPage() {
               className="h-56 w-full rounded-xl object-cover"
             />
             <h2 className="mt-4 text-xl font-semibold">{member.name}</h2>
-            <p className="text-sm font-medium text-accent">{member.role}</p>
+            <p className="text-sm font-medium text-accent">{member.description}</p>
             <p className="mt-2 text-sm text-zinc-700">{member.bio}</p>
             <ul className="mt-4 space-y-1 text-sm text-zinc-600">
-              {member.played_works.map((work) => (
-                <li key={work.title}>
-                  • {work.title} ({work.year})
+              {member.participations.map((participation) => (
+                <li key={`${participation.piece}-${participation.role}`}>
+                  • {participation.piece}: {participation.role}
                 </li>
               ))}
             </ul>

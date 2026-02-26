@@ -27,7 +27,7 @@ export default function TicketsPage() {
           Reserviere deine Plätze einfach online. Du erhältst eine automatische Bestätigung per
           E-Mail.
         </p>
-        <p className="mt-2 text-sm text-zinc-600">{formatDateTime(upcomingEvent.date, upcomingEvent.time)}</p>
+        <p className="mt-2 text-sm text-zinc-600">{formatDateTime(upcomingEvent.date, upcomingEvent.performance_time)}</p>
       </section>
       <ReservationForm eventId={upcomingEvent.id} />
     </div>

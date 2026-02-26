@@ -16,6 +16,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
+  const { data: incremented, error: incrementError } = await supabase.rpc('increment_reserved_tickets', {
+    event_id_input: parsed.data.eventId,
+    ticket_amount: parsed.data.tickets
+  });
+
+  if (incrementError || !incremented) {
+    return NextResponse.json(
+      { error: 'Für diese Aufführung sind online nicht mehr genug Tickets verfügbar.' },
+      { status: 400 }
+    );
+  }
+
   const { error } = await supabase.from('reservations').insert({
     name: parsed.data.name,
     email: parsed.data.email,
@@ -24,6 +36,10 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    await supabase.rpc('decrement_reserved_tickets', {
+      event_id_input: parsed.data.eventId,
+      ticket_amount: parsed.data.tickets
+    });
     return NextResponse.json({ error: 'Datenbankfehler beim Speichern.' }, { status: 500 });
   }
 

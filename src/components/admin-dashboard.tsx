@@ -21,8 +21,8 @@ type EventForm = {
   event_date: string;
   performance_time: string;
   admission_time: string;
-  total_seats: number;
-  online_seat_limit: number;
+  total_seats: number | '';
+  online_seat_limit: number | '';
   venue: string;
   hero_image_url: string;
   cast_entries: CastEntry[];
@@ -47,8 +47,8 @@ const initialEvent: EventForm = {
   event_date: '',
   performance_time: '',
   admission_time: '',
-  total_seats: 250,
-  online_seat_limit: 200,
+  total_seats: '',
+  online_seat_limit: '',
   venue: DEFAULT_VENUE,
   hero_image_url: '',
   cast_entries: [{ member_name: '', role: '' }],
@@ -63,17 +63,6 @@ const initialMember: MemberForm = {
   club_roles: [''],
   participations: [{ piece: '', role: '' }]
 };
-
-const allowedImageRatios = [1, 4 / 3, 16 / 9];
-
-function isAllowedImageRatio(width: number, height: number) {
-  if (width <= 0 || height <= 0) {
-    return false;
-  }
-
-  const ratio = width / height;
-  return allowedImageRatios.some((allowed) => Math.abs(ratio - allowed) <= 0.03);
-}
 
 function FieldInput(props: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
   const { label, id, hint, className = '', ...rest } = props;
@@ -122,7 +111,6 @@ export function AdminDashboard() {
   const [selectedReservationEventId, setSelectedReservationEventId] = useState<string>('');
   const [eventErrors, setEventErrors] = useState<ValidationErrors>({});
   const [memberErrors, setMemberErrors] = useState<ValidationErrors>({});
-  const [castDraft, setCastDraft] = useState<CastEntry>({ member_name: '', role: '' });
   const [clubRoleDraft, setClubRoleDraft] = useState('');
   const eventImageInputRef = useRef<HTMLInputElement | null>(null);
   const memberImageInputRef = useRef<HTMLInputElement | null>(null);
@@ -190,22 +178,6 @@ export function AdminDashboard() {
     }
 
     try {
-       const dimensionsAreValid = await new Promise<boolean>((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(isAllowedImageRatio(img.width, img.height));
-        img.onerror = () => resolve(false);
-        img.src = URL.createObjectURL(file);
-      });
-
-      if (!dimensionsAreValid) {
-        const errorMessage = 'Bitte ein Bild im Format 1:1, 4:3 oder 16:9 hochladen.';
-        if (type === 'event') {
-          setEventErrors((prev) => ({ ...prev, hero_image_url: errorMessage }));
-        } else {
-          setMemberErrors((prev) => ({ ...prev, image_url: errorMessage }));
-        }
-        return;
-      }
       const url = await uploadImage(file);
       if (type === 'event') {
         setEventErrors((prev) => ({ ...prev, hero_image_url: '' }));
@@ -249,6 +221,15 @@ export function AdminDashboard() {
     if (!payload.hero_image_url) {
       localErrors.hero_image_url = 'Bitte ein Titelbild hochladen.';
     }
+    if (!payload.total_seats || payload.total_seats < 1) {
+      localErrors.total_seats = 'Bitte die Gesamtanzahl Plätze angeben.';
+    }
+    if (!payload.online_seat_limit || payload.online_seat_limit < 1) {
+      localErrors.online_seat_limit = 'Bitte die Anzahl Online-Reservierungen angeben.';
+    }
+    if (payload.total_seats && payload.online_seat_limit && payload.online_seat_limit > payload.total_seats) {
+      localErrors.online_seat_limit = 'Online-Reservierungen dürfen nicht höher als die Gesamtplätze sein.';
+    }
 
     payload.cast_entries.forEach((entry, index) => {
       if (!entry.role.trim()) {
@@ -287,7 +268,6 @@ export function AdminDashboard() {
     }));
 
     setEventForm(initialEvent);
-    setCastDraft({ member_name: '', role: '' });
     await loadData();
   }
 
@@ -422,51 +402,33 @@ export function AdminDashboard() {
             {eventErrors.performance_time && <p className="text-xs text-red-600">{eventErrors.performance_time}</p>}
             <FieldInput id="event-admission-time" type="time" label="Einlassbeginn" value={eventForm.admission_time} onChange={(event) => setEventForm((prev) => ({ ...prev, admission_time: event.target.value }))} required className="[&::-webkit-date-and-time-value]:text-left" />
             {eventErrors.admission_time && <p className="text-xs text-red-600">{eventErrors.admission_time}</p>}
-            <FieldInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: Number(event.target.value) }))} required />
-            <FieldInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: Number(event.target.value) }))} required />
+            <FieldInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: event.target.value === '' ? '' : Number(event.target.value) }))} required />
+            {eventErrors.total_seats && <p className="text-xs text-red-600">{eventErrors.total_seats}</p>}
+            <FieldInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats || undefined} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: event.target.value === '' ? '' : Number(event.target.value) }))} required />
             {eventErrors.online_seat_limit && <p className="text-xs text-red-600">{eventErrors.online_seat_limit}</p>}
             <AutoTextarea id="event-description" label="Beschreibung" value={eventForm.description} onChange={(event) => setEventForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
             {eventErrors.description && <p className="text-xs text-red-600 md:col-span-2">{eventErrors.description}</p>}
             <div className="md:col-span-2 space-y-2">
               <p className="text-sm font-medium">Besetzung (Rollenname + Mitglied)</p>
               {eventForm.cast_entries.map((entry, index) => (
-                <div key={index} className="grid gap-2 md:grid-cols-2">
-                  <p className="text-sm font-medium">Besetzung</p>
-              <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                <FieldInput label="Rollenname" value={castDraft.role} onChange={(event) => setCastDraft((prev) => ({ ...prev, role: event.target.value }))} />
-                <label className="flex min-h-[84px] flex-col gap-1">
-                  <span className="text-sm font-medium text-zinc-700">Mitglied</span>
-                  <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={castDraft.member_name} onChange={(event) => setCastDraft((prev) => ({ ...prev, member_name: event.target.value }))}>
-                    <option value="">Mitglied auswählen</option>
-                    {members.map((member) => (
-                      <option key={member.id} value={member.name}>{member.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <button type="button" className="mb-2 rounded-lg border px-3 py-2 text-sm" onClick={() => {
-                  if (!castDraft.role.trim() || !castDraft.member_name.trim()) {
-                    setEventErrors((prev) => ({ ...prev, cast_draft: 'Bitte Rolle und Mitglied auswählen.' }));
-                    return;
-                  }
-                  setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { role: castDraft.role.trim(), member_name: castDraft.member_name.trim() }] }));
-                  setCastDraft({ role: '', member_name: '' });
-                  setEventErrors((prev) => ({ ...prev, cast_draft: '' }));
-                }}>Hinzufügen</button>
-              </div>
-              {eventErrors.cast_draft && <p className="text-xs text-red-600">{eventErrors.cast_draft}</p>}
-              {eventForm.cast_entries.length > 0 && (
-                <ul className="list-disc space-y-1 pl-6 text-sm text-zinc-700">
-                  {eventForm.cast_entries.map((entry, index) => (
-                    <li key={`${entry.member_name}-${entry.role}-${index}`} className="flex items-center justify-between gap-2">
-                      <span>{entry.role} – {entry.member_name}</span>
-                      <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs text-red-700" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                  <FieldInput label="Rollenname" value={entry.role} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
+                  <label className="flex min-h-[84px] flex-col gap-1">
+                    <span className="text-sm font-medium text-zinc-700">Mitglied</span>
+                    <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.member_name} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))}>
+                      <option value="">Mitglied auswählen</option>
+                      {members.map((member) => (
+                        <option key={member.id} value={member.name}>{member.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button type="button" className="h-9 w-9 self-center rounded-full border text-sm text-red-700 md:self-end" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
+                  {(eventErrors[`cast_entries.${index}.member_name`] || eventErrors[`cast_entries.${index}.role`]) && (
+                    <p className="text-xs text-red-600 md:col-span-3">{eventErrors[`cast_entries.${index}.role`] ?? eventErrors[`cast_entries.${index}.member_name`]}</p>
+                  )}
                 </div>
               ))}
-              <button type="button" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { role: '', member_name: '' }] }))} className="rounded-lg border px-3 py-2 text-sm">Besetzungszeile hinzufügen</button>
+              <button type="button" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { role: '', member_name: '' }] }))} className="rounded-lg border px-3 py-2 text-sm">Eintrag hinzufügen</button>
             </div>
             <label className="flex items-center gap-2 text-sm md:col-span-2">
               <input type="checkbox" checked={eventForm.is_past} onChange={(event) => setEventForm((prev) => ({ ...prev, is_past: event.target.checked }))} />
@@ -500,7 +462,12 @@ export function AdminDashboard() {
                 Bild auswählen
               </button>
               {memberErrors.image_url && <p className="mt-1 text-xs text-red-600">{memberErrors.image_url}</p>}
-              {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 aspect-[4/3] w-full rounded-xl border border-zinc-200 object-cover" />}            </div>
+              {memberForm.image_url && (
+                <div className="mt-2 w-full max-w-md">
+                  <img src={memberForm.image_url} alt="Mitglied Vorschau" className="aspect-[4/3] w-full rounded-xl border border-zinc-200 object-cover" />
+                </div>
+              )}
+            </div>
             <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
             {memberErrors.name && <p className="text-xs text-red-600">{memberErrors.name}</p>}
             <AutoTextarea id="member-bio" label="Beschreibung" value={memberForm.bio} onChange={(event) => setMemberForm((prev) => ({ ...prev, bio: event.target.value, description: event.target.value }))} required className="md:col-span-2 min-h-[100px]" />
@@ -547,7 +514,7 @@ export function AdminDashboard() {
                     </select>
                   </label>
                   <FieldInput label="Rolle im Stück" value={entry.role} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
-                                  <button type="button" className="mb-2 h-9 w-9 rounded-full border text-sm text-red-700" onClick={() => setMemberForm((prev) => ({ ...prev, participations: prev.participations.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
+                                  <button type="button" className="h-9 w-9 self-center rounded-full border text-sm text-red-700 md:self-end" onClick={() => setMemberForm((prev) => ({ ...prev, participations: prev.participations.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
                   {(memberErrors[`participations.${index}.piece`] || memberErrors[`participations.${index}.role`]) && (
                     <p className="text-xs text-red-600 md:col-span-3">{memberErrors[`participations.${index}.piece`] ?? memberErrors[`participations.${index}.role`]}</p>
                   )}

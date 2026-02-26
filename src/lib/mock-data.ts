@@ -83,7 +83,6 @@ export const events: Event[] = [
     reserved_online_tickets: 160,
     hero_image_url:
       'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=1200&q=80',
-    venue: 'Bürgersaal Altenhaßlau',
     cast: [
       { member_id: '2', member_name: 'Markus Dietz', role: 'Anton Antonowitsch' },
       { member_id: '3', member_name: 'Sofia Klein', role: 'Anna Andrejewna' }

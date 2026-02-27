@@ -11,3 +11,14 @@ export function formatDateTime(date: string, time?: string) {
 
   return `${day}.${month}.${year} ${time} Uhr`;
 }
+
+export function isPastEvent(date: string, time?: string) {
+  const dateTimeValue = time ? `${date}T${time}` : `${date}T23:59:59`;
+  const eventDate = new Date(dateTimeValue);
+
+  if (Number.isNaN(eventDate.getTime())) {
+    return false;
+  }
+
+  return eventDate.getTime() < Date.now();
+}

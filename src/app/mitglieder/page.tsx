@@ -19,7 +19,7 @@ export default async function MembersPage() {
             />
             <h2 className="mt-4 text-xl font-semibold">{member.name}</h2>
             <p className="text-sm font-medium text-accent">{member.description}</p>
-            <p className="mt-2 text-sm text-zinc-700">{member.bio}</p>
+            
             <ul className="mt-4 space-y-1 text-sm text-zinc-600">
               {member.participations.map((participation) => (
                 <li key={`${participation.piece}-${participation.role}`}>

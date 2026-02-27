@@ -88,8 +88,7 @@ async function validateEventPayload(body: Record<string, unknown>) {
     hero_image_url: String(body.hero_image_url ?? '').trim() || null,
     cast_entries: castEntries,
     total_seats: Number(body.total_seats ?? 0),
-    online_seat_limit: Number(body.online_seat_limit ?? 0),
-    is_past: Boolean(body.is_past)
+    online_seat_limit: Number(body.online_seat_limit ?? 0)
   };
 
   if (!payload.title) {

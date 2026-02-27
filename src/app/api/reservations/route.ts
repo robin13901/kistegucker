@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { reservationSchema } from '@/lib/validation';
+import { isPastEvent } from '@/lib/date-time';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export async function POST(request: Request) {
@@ -14,6 +15,20 @@ export async function POST(request: Request) {
 
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
+  }
+
+  const { data: eventData, error: eventError } = await supabase
+    .from('events')
+    .select('event_date,performance_time')
+    .eq('id', parsed.data.eventId)
+    .single();
+
+  if (eventError || !eventData) {
+    return NextResponse.json({ error: 'Aufführung wurde nicht gefunden.' }, { status: 404 });
+  }
+
+  if (isPastEvent(eventData.event_date, eventData.performance_time)) {
+    return NextResponse.json({ error: 'Für vergangene Aufführungen sind keine Online-Reservierungen möglich.' }, { status: 400 });
   }
 
   const { data: incremented, error: incrementError } = await supabase.rpc('increment_reserved_tickets', {

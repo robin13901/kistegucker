@@ -1,5 +1,6 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSupabaseClient } from '@/lib/supabase';
+import { isPastEvent } from '@/lib/date-time';
 
 type CastEntry = { member_name: string; role: string; member_id?: string };
 
@@ -27,7 +28,6 @@ export type PublicMember = {
   id: string;
   name: string;
   description: string;
-  bio: string;
   image_url: string;
   club_roles: string[];
   participations: Participation[];
@@ -51,7 +51,10 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
     return [];
   }
 
-  return data;
+  return data.map((event) => ({
+    ...event,
+    is_past: isPastEvent(event.event_date, event.performance_time)
+  }));
 }
 
 export async function getPublicMembers(): Promise<PublicMember[]> {

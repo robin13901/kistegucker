@@ -24,7 +24,6 @@ create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text not null,
-  bio text not null,
   image_url text,
   club_roles text[] not null default '{}',
   participations jsonb not null default '[]'::jsonb,
@@ -83,3 +82,43 @@ alter table public.reservations disable row level security;
 -- ================================
 insert into public.profiles (id, role)
 values ('b484a9be-0edc-486b-bb02-4bf9a95dd1f4', 'admin');
+
+-- ================================
+-- RESERVATION HELPERS
+-- ================================
+create or replace function public.increment_reserved_tickets(event_id_input uuid, ticket_amount integer)
+returns boolean
+language plpgsql
+as $$
+declare
+  affected_rows integer;
+begin
+  update public.events
+  set reserved_online_tickets = reserved_online_tickets + ticket_amount
+  where id = event_id_input
+    and ticket_amount > 0
+    and reserved_online_tickets + ticket_amount <= online_seat_limit
+    and (event_date + performance_time) >= now()
+  ;
+
+  get diagnostics affected_rows = row_count;
+  return affected_rows = 1;
+end;
+$$;
+
+create or replace function public.decrement_reserved_tickets(event_id_input uuid, ticket_amount integer)
+returns boolean
+language plpgsql
+as $$
+declare
+  affected_rows integer;
+begin
+  update public.events
+  set reserved_online_tickets = greatest(reserved_online_tickets - ticket_amount, 0)
+  where id = event_id_input
+    and ticket_amount > 0;
+
+  get diagnostics affected_rows = row_count;
+  return affected_rows = 1;
+end;
+$$;

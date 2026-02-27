@@ -45,7 +45,7 @@ export default async function HomePage() {
                   <h3 className="mt-2 text-xl font-semibold">{play.title}</h3>
                   <p className="mt-2 text-zinc-700">{play.description}</p>
                   <div className="mt-3 space-y-2">
-                    {play.performances.filter((p) => !p.is_past).slice(0, 2).map((p) => (
+                    {play.performances.filter((p) => !p.is_past).map((p) => (
                       <div key={p.id} className="flex items-center justify-between rounded-lg border p-2 text-sm">
                         <span>{formatDate(p.start_datetime)}</span>
                         <span>{p.reserved_online_tickets}/{p.online_quota}</span>

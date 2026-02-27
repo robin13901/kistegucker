@@ -1,6 +1,25 @@
--- Supabase schema for Die Kistegucker e.V.
+-- ================================
+-- HARD RESET
+-- ================================
+drop schema if exists public cascade;
+create schema public;
+
+grant usage on schema public to postgres, anon, authenticated, service_role;
+grant all on schema public to postgres;
+
 create extension if not exists "pgcrypto";
 
+-- ================================
+-- TABLES
+-- ================================
+
+-- PROFILES
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'user'
+);
+
+-- MEMBERS
 create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -12,6 +31,7 @@ create table if not exists public.members (
   created_at timestamptz not null default now()
 );
 
+-- EVENTS
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
@@ -33,6 +53,7 @@ create table if not exists public.events (
   check (reserved_online_tickets <= online_seat_limit)
 );
 
+-- RESERVATIONS
 create table if not exists public.reservations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -42,57 +63,23 @@ create table if not exists public.reservations (
   created_at timestamptz not null default now()
 );
 
--- Enable Row Level Security
-alter table public.members enable row level security;
-alter table public.events enable row level security;
-alter table public.reservations enable row level security;
+-- ================================
+-- GRANTS
+-- ================================
+grant usage on schema public to anon, authenticated;
+grant all on all tables in schema public to anon, authenticated;
+grant all on all sequences in schema public to anon, authenticated;
 
--- Policies
-create policy "public read events" on public.events
-for select using (true);
+-- ================================
+-- DISABLE RLS
+-- ================================
+alter table public.profiles disable row level security;
+alter table public.members disable row level security;
+alter table public.events disable row level security;
+alter table public.reservations disable row level security;
 
-create policy "public read members" on public.members
-for select using (true);
-
-create policy "anon insert reservations" on public.reservations
-for insert with check (true);
-
-create policy "authenticated full access members" on public.members
-for all using (auth.role() = 'authenticated')
-with check (auth.role() = 'authenticated');
-
-create policy "authenticated full access events" on public.events
-for all using (auth.role() = 'authenticated')
-with check (auth.role() = 'authenticated');
-
-create policy "authenticated full access reservations" on public.reservations
-for all using (auth.role() = 'authenticated')
-with check (auth.role() = 'authenticated');
-
-
-create or replace function public.increment_reserved_tickets(event_id_input uuid, ticket_amount integer)
-returns boolean
-language plpgsql
-security definer
-as $$
-begin
-  update public.events
-  set reserved_online_tickets = reserved_online_tickets + ticket_amount
-  where id = event_id_input
-    and reserved_online_tickets + ticket_amount <= online_seat_limit;
-
-  return found;
-end;
-$$;
-
-create or replace function public.decrement_reserved_tickets(event_id_input uuid, ticket_amount integer)
-returns void
-language plpgsql
-security definer
-as $$
-begin
-  update public.events
-  set reserved_online_tickets = greatest(reserved_online_tickets - ticket_amount, 0)
-  where id = event_id_input;
-end;
-$$;
+-- ================================
+-- CREATE ADMIN USER
+-- ================================
+insert into public.profiles (id, role)
+values ('b484a9be-0edc-486b-bb02-4bf9a95dd1f4', 'admin');

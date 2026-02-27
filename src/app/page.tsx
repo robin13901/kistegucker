@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import { AnimatedSection } from '@/components/animated-section';
 import { getPublicPlays } from '@/lib/public-data';
 

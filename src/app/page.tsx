@@ -1,7 +1,6 @@
 import Image from 'next/image';
-import Link from 'next/link';
-import { formatDate } from '@/lib/format';
 import { AnimatedSection } from '@/components/animated-section';
+import { PlayCard } from '@/components/play-card';
 import { getPublicPlays } from '@/lib/public-data';
 
 export default async function HomePage() {
@@ -39,23 +38,15 @@ export default async function HomePage() {
           <h2 className="text-2xl font-semibold">Demnächst bei uns</h2>
           <div className="space-y-4">
             {upcomingPlays.map((play) => (
-              <article key={play.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
-                {play.poster_image && <Image src={play.poster_image} alt={play.title} width={1200} height={700} className="h-52 w-full object-cover" />}
-                <div className="p-6">
-                  <h3 className="mt-2 text-xl font-semibold">{play.title}</h3>
-                  <p className="mt-2 text-zinc-700">{play.description}</p>
-                  <div className="mt-3 space-y-2">
-                    {play.performances.filter((p) => !p.is_past).map((p) => (
-                      <div key={p.id} className="flex items-center justify-between rounded-lg border p-2 text-sm">
-                        <span>{formatDate(p.start_datetime)}</span>
-                        <span>{p.reserved_online_tickets}/{p.online_quota}</span>
-                        <Link href={`/tickets?performance=${p.id}`} className="font-semibold text-accent">Tickets reservieren →</Link>
-                      </div>
-                    ))}
-                  </div>
-                  <Link href={`/events/${play.slug}`} className="mt-3 inline-flex font-semibold text-accent">Details →</Link>
-                </div>
-              </article>
+              <PlayCard
+                key={play.id}
+                title={play.title}
+                description={play.description}
+                posterImage={play.poster_image}
+                performances={play.performances}
+                slug={play.slug}
+                mode="upcoming"
+              />
             ))}
           </div>
         </section>
@@ -65,15 +56,15 @@ export default async function HomePage() {
           <h2 className="text-2xl font-semibold">Vergangene Aufführungen</h2>
           <div className="space-y-4">
             {pastPlays.map((play) => (
-              <article key={play.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
-                {play.poster_image && <Image src={play.poster_image} alt={play.title} width={1200} height={700} className="h-52 w-full object-cover" />}
-                <div className="p-6">
-                  <h3 className="mt-2 text-xl font-semibold">{play.title}</h3>
-                  <p className="mt-2 text-zinc-700">{play.description}</p>
-                  <p className="mt-2 text-sm text-zinc-500">{play.performances.map((p) => formatDate(p.start_datetime)).join(' · ') || '—'}</p>
-                  <Link href={`/events/${play.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">Details →</Link>
-                </div>
-              </article>
+              <PlayCard
+                key={play.id}
+                title={play.title}
+                description={play.description}
+                posterImage={play.poster_image}
+                performances={play.performances}
+                slug={play.slug}
+                mode="past"
+              />
             ))}
           </div>
         </section>

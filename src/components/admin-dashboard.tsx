@@ -11,7 +11,8 @@ import {
 } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MemberCard } from '@/components/member-card';
-import { slugify, toHourMinute } from '@/lib/format';
+import { PlayCard } from '@/components/play-card';
+import { slugify } from '@/lib/format';
 
 type AdminState = {
   email: string;
@@ -31,6 +32,8 @@ type PerformanceForm = {
   total_seats: number | '';
   online_seat_limit: number | '';
   venue: string;
+  gallery: string[];
+  is_past?: boolean;
 };
 
 type PlayForm = {
@@ -69,7 +72,8 @@ const initialPerformance: PerformanceForm = {
   admission_time: '',
   total_seats: '',
   online_seat_limit: '',
-  venue: DEFAULT_VENUE
+  venue: DEFAULT_VENUE,
+  gallery: []
 };
 
 const initialPlay: PlayForm = {
@@ -207,6 +211,7 @@ export function AdminDashboard() {
   const [showMemberForm, setShowMemberForm] = useState(false);
   const eventImageInputRef = useRef<HTMLInputElement | null>(null);
   const memberImageInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const supabase = useMemo(() => (hasSupabaseConfig ? createClientComponentClient() : null), [hasSupabaseConfig]);
 
@@ -217,14 +222,27 @@ export function AdminDashboard() {
       fetch('/api/admin/reservations')
     ]);
 
+    const eventResult = eventResponse.ok ? await eventResponse.json() : { data: [] };
     if (eventResponse.ok) {
-      const result = await eventResponse.json();
-      setPlays(result.data ?? []);
+      setPlays(eventResult.data ?? []);
     }
 
     if (memberResponse.ok) {
       const result = await memberResponse.json();
-      setMembers((result.data ?? []).map((entry: MemberForm) => normalizeMemberForm(entry)));
+      const rawMembers = (result.data ?? []).map((entry: MemberForm) => normalizeMemberForm(entry));
+      const participationsByMember = new Map<string, Participation[]>();
+
+      (eventResult.data ?? []).forEach((play: PlayForm) => {
+        (play.cast_entries ?? []).forEach((castEntry) => {
+          const list = participationsByMember.get(castEntry.member_name) ?? [];
+          if (!list.some((item) => item.piece === play.title && item.role === castEntry.role)) {
+            list.push({ piece: play.title, role: castEntry.role });
+          }
+          participationsByMember.set(castEntry.member_name, list);
+        });
+      });
+
+      setMembers(rawMembers.map((entry: MemberForm) => ({ ...entry, participations: participationsByMember.get(entry.name) ?? [] })));
     }
 
     if (reservationResponse.ok) {
@@ -253,6 +271,35 @@ export function AdminDashboard() {
 
     await loadData();
     setState((prev) => ({ ...prev, loggedIn: true, feedback: undefined }));
+  }
+
+
+  async function onGalleryImageSelect(event: ChangeEvent<HTMLInputElement>, performanceIndex: number) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length < 1) return;
+
+    const performance = playForm.performances[performanceIndex];
+    if (!performance) return;
+
+    const isPast = new Date(`${performance.event_date}T${performance.performance_time || '00:00'}:00`).getTime() < Date.now();
+    if (!isPast) {
+      setState((prev) => ({ ...prev, feedback: 'Galeriebilder können nur für vergangene Aufführungen hochgeladen werden.' }));
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const converted = await Promise.all(files.map((file) => preprocessImageFile(file)));
+      setPlayForm((prev) => ({
+        ...prev,
+        performances: prev.performances.map((row, rowIndex) => rowIndex === performanceIndex ? { ...row, gallery: [...(row.gallery ?? []), ...converted] } : row)
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Galeriebilder konnten nicht hochgeladen werden.';
+      setState((prev) => ({ ...prev, feedback: message }));
+    } finally {
+      event.target.value = '';
+    }
   }
 
   async function onImageSelect(event: ChangeEvent<HTMLInputElement>, type: 'event' | 'member') {
@@ -290,7 +337,8 @@ export function AdminDashboard() {
         .map((entry) => ({
           ...entry,
           total_seats: Number(entry.total_seats || 0),
-          online_seat_limit: Number(entry.online_seat_limit || 0)
+          online_seat_limit: Number(entry.online_seat_limit || 0),
+          gallery: Array.isArray(entry.gallery) ? entry.gallery : []
         }))
     };
 
@@ -490,6 +538,34 @@ export function AdminDashboard() {
                         <FieldInput label="Gesamtanzahl Plätze" type="number" min={1} value={entry.total_seats} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, total_seats: event.target.value === '' ? '' : Number(event.target.value) } : row) }))} required />
                         <FieldInput label="Anzahl Online-Reservierungen" type="number" min={1} max={entry.total_seats || undefined} value={entry.online_seat_limit} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, online_seat_limit: event.target.value === '' ? '' : Number(event.target.value) } : row) }))} required />
                       </div>
+                      <div className="mt-3 space-y-2">
+                        {new Date(`${entry.event_date}T${entry.performance_time || '00:00'}:00`).getTime() < Date.now() && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Galerie (nur vergangene Aufführungen)</p>
+                            <input ref={(node) => { galleryInputRefs.current[index] = node; }} type="file" accept="image/*" multiple onChange={(event) => onGalleryImageSelect(event, index)} className="hidden" />
+                            <button type="button" onClick={() => galleryInputRefs.current[index]?.click()} className="rounded-lg border px-3 py-2 text-sm">Galeriebilder hinzufügen</button>
+                            {(entry.gallery ?? []).length > 0 && (
+                              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                                {(entry.gallery ?? []).map((imageUrl, galleryIndex) => (
+                                  <div key={`${entry.id ?? index}-${galleryIndex}`} className="relative">
+                                    <img src={imageUrl} alt={`Galeriebild ${galleryIndex + 1}`} className="aspect-video w-full rounded-lg border border-zinc-200 object-cover" />
+                                    <button
+                                      type="button"
+                                      className="absolute right-1 top-1 rounded-full bg-white/90 px-2 py-0.5 text-xs text-red-700"
+                                      onClick={() => setPlayForm((prev) => ({
+                                        ...prev,
+                                        performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, gallery: (row.gallery ?? []).filter((_, imageIndex) => imageIndex !== galleryIndex) } : row)
+                                      }))}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <div className="mt-2 flex justify-end">
                         <button type="button" className="rounded-lg border px-3 py-1 text-sm text-red-700" onClick={() => setPlayForm((prev) => ({ ...prev, performances: prev.performances.filter((_, rowIndex) => rowIndex !== index) }))}>Aufführung entfernen</button>
                       </div>
@@ -504,38 +580,52 @@ export function AdminDashboard() {
           )}
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
-            {plays.map((entry) => (
-              <article key={entry.id} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-zinc-200">
-                {entry.hero_image_url && <img src={entry.hero_image_url} alt={entry.title} className="h-44 w-full rounded-xl object-cover" />}
-                <div className="mt-3 flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{entry.title}</h3>
-                    <p className="text-sm text-zinc-500">{entry.performances.map((performance) => `${performance.event_date} · ${toHourMinute(performance.performance_time)} Uhr`).join(' | ')}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPlayForm({
-                          ...entry,
-                          cast_entries: entry.cast_entries?.length ? entry.cast_entries : [{ member_name: '', role: '' }],
-                          performances: entry.performances?.length ? entry.performances : [{ ...initialPerformance }]
-                        });
-                        setShowEventForm(true);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="rounded-lg border px-2 py-1 text-sm"
-                      aria-label="Theaterstück bearbeiten"
-                      title="Bearbeiten"
-                    >
-                      ✏️
-                    </button>
-                    <button type="button" onClick={() => deleteEvent(entry.id)} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Theaterstück löschen" title="Löschen">🗑️</button>
-                  </div>
-                </div>
-                <p className="mt-2 text-sm text-zinc-700">{entry.description}</p>
-              </article>
-            ))}
+            {plays.map((entry) => {
+              const hasUpcomingPerformance = entry.performances?.some((performance) => !performance.is_past);
+
+              return (
+                <PlayCard
+                  key={entry.id}
+                  title={entry.title}
+                  description={entry.description}
+                  posterImage={entry.hero_image_url}
+                  slug={entry.slug}
+                  mode={hasUpcomingPerformance ? 'upcoming' : 'past'}
+                  performances={(entry.performances ?? []).map((performance) => ({
+                    id: performance.id ?? `${entry.id}-${performance.event_date}-${performance.performance_time}`,
+                    start_datetime: `${performance.event_date}T${performance.performance_time}:00`,
+                    reserved_online_tickets: Number((performance as { reserved_online_tickets?: number }).reserved_online_tickets ?? 0),
+                    online_quota: Number(performance.online_seat_limit ?? 0),
+                    is_past: Boolean(performance.is_past)
+                  }))}
+                  showReservationLink={false}
+                  actions={(
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlayForm({
+                            ...entry,
+                            cast_entries: entry.cast_entries?.length ? entry.cast_entries : [{ member_name: '', role: '' }],
+                            performances: entry.performances?.length
+                              ? entry.performances.map((performance) => ({ ...performance, gallery: performance.gallery ?? [] }))
+                              : [{ ...initialPerformance }]
+                          });
+                          setShowEventForm(true);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="rounded-lg border px-2 py-1 text-sm"
+                        aria-label="Theaterstück bearbeiten"
+                        title="Bearbeiten"
+                      >
+                        ✏️
+                      </button>
+                      <button type="button" onClick={() => deleteEvent(entry.id)} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Theaterstück löschen" title="Löschen">🗑️</button>
+                    </div>
+                  )}
+                />
+              );
+            })}
           </div>
         </section>
       )}

@@ -4,9 +4,14 @@ import { formatDateTime } from '@/lib/format';
 import { notFound } from 'next/navigation';
 import { getPublicPlays } from '@/lib/public-data';
 
-export default async function EventDetailPage({ params }: { params: { slug: string } }) {
+type EventDetailProps = {
+  params: { slug: string } | Promise<{ slug: string }>;
+};
+
+export default async function EventDetailPage({ params }: EventDetailProps) {
+  const resolvedParams = await Promise.resolve(params);
   const plays = await getPublicPlays();
-  const play = plays.find((entry) => entry.slug === params.slug);
+  const play = plays.find((entry) => entry.slug === resolvedParams.slug);
   if (!play) notFound();
 
   return (
@@ -29,11 +34,20 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
 
       <section>
         <h2 className="text-xl font-semibold">Aufführungen</h2>
-        <div className="mt-2 space-y-2">
+        <div className="mt-2 space-y-4">
           {play.performances.map((performance) => (
-            <div key={performance.id} className="flex flex-wrap items-center gap-4 rounded-xl border bg-white p-3 text-sm">
-              <span>{formatDateTime(performance.start_datetime)}</span>
-              {!performance.is_past && <Link href={`/tickets?performance=${performance.id}`} className="font-semibold text-accent">Tickets reservieren →</Link>}
+            <div key={performance.id} className="space-y-3 rounded-xl border bg-white p-3 text-sm">
+              <div className="flex flex-wrap items-center gap-4">
+                <span>{formatDateTime(performance.start_datetime)}</span>
+                {!performance.is_past && <Link href={`/tickets?performance=${performance.id}`} className="font-semibold text-accent">Tickets reservieren →</Link>}
+              </div>
+              {performance.gallery.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                  {performance.gallery.map((imageUrl, index) => (
+                    <Image key={`${performance.id}-${index}`} src={imageUrl} alt={`${play.title} Aufführung ${index + 1}`} width={1200} height={900} className="aspect-video w-full rounded-lg object-cover" unoptimized />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

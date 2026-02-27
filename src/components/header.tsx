@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const links = [
   { href: '/', label: 'Start' },
@@ -8,6 +11,16 @@ const links = [
 ];
 
 export function Header() {
+  const pathname = usePathname();
+
+  function isActive(href: string) {
+    if (href === '/') {
+      return pathname === '/';
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
       <div className="container-default flex flex-col gap-2 py-3 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0">
@@ -16,7 +29,11 @@ export function Header() {
         </Link>
         <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium text-zinc-700">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="transition hover:text-accent">
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`transition hover:text-accent ${isActive(link.href) ? 'text-accent' : ''}`}
+            >
               {link.label}
             </Link>
           ))}

@@ -35,14 +35,12 @@ type EventForm = {
   venue: string;
   hero_image_url: string;
   cast_entries: CastEntry[];
-  is_past: boolean;
 };
 
 type MemberForm = {
   id?: string;
   name: string;
   description: string;
-  bio: string;
   image_url: string;
   club_roles: string[];
   participations: Participation[];
@@ -62,13 +60,11 @@ const initialEvent: EventForm = {
   venue: DEFAULT_VENUE,
   hero_image_url: '',
   cast_entries: [{ member_name: '', role: '' }],
-  is_past: false
 };
 
 const initialMember: MemberForm = {
   name: '',
   description: '',
-  bio: '',
   image_url: '',
   club_roles: [''],
   participations: [{ piece: '', role: '' }]
@@ -314,7 +310,6 @@ export function AdminDashboard() {
 
     const payload = {
       ...memberForm,
-      description: memberForm.bio,
       club_roles: memberForm.club_roles.filter((role) => role.trim()),
       participations: memberForm.participations.filter((entry) => entry.piece.trim() || entry.role.trim())
     };
@@ -322,7 +317,7 @@ export function AdminDashboard() {
     const localErrors: ValidationErrors = {};
 
     if (!payload.name.trim()) localErrors.name = 'Bitte einen Namen eingeben.';
-    if (!payload.bio.trim()) localErrors.bio = 'Bitte eine Beschreibung eingeben.';
+    if (!payload.description.trim()) localErrors.description = 'Bitte eine Beschreibung eingeben.';
     if (!payload.image_url) localErrors.image_url = 'Bitte ein Foto hochladen.';
 
     payload.participations.forEach((entry, index) => {
@@ -535,8 +530,7 @@ export function AdminDashboard() {
               </div>
 
               <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
-              <FieldInput id="member-description" label="Kurzbeschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value, bio: event.target.value }))} required />
-              <AutoTextarea id="member-bio" label="Biografie" value={memberForm.bio} onChange={(event) => setMemberForm((prev) => ({ ...prev, bio: event.target.value, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
+              <AutoTextarea id="member-description" label="Beschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
 
               <div className="md:col-span-2 space-y-2">
                 <p className="text-sm font-medium">Vereinsrollen</p>
@@ -619,7 +613,7 @@ export function AdminDashboard() {
                     <button type="button" onClick={() => deleteMember(entry.id)} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Mitglied löschen" title="Löschen">🗑️</button>
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-zinc-700">{entry.bio}</p>
+                <p className="mt-2 text-sm text-zinc-700">{entry.description}</p>
                 <ul className="mt-4 space-y-1 text-sm text-zinc-600">
                   {entry.participations?.map((participation) => (
                     <li key={`${participation.piece}-${participation.role}`}>• {participation.piece}: {participation.role}</li>

@@ -6,7 +6,6 @@ type Participation = { piece: string; role: string };
 type MemberPayload = {
   name: string;
   description: string;
-  bio: string;
   image_url: string | null;
   club_roles: string[];
   participations: Participation[];
@@ -17,8 +16,7 @@ function validateMemberPayload(body: Record<string, unknown>) {
 
   const payload: MemberPayload = {
     name: String(body.name ?? '').trim(),
-    description: String(body.description ?? body.bio ?? '').trim(),
-    bio: String(body.bio ?? body.description ?? '').trim(),
+    description: String(body.description ?? '').trim(),
     image_url: String(body.image_url ?? '').trim() || null,
     club_roles: Array.isArray(body.club_roles)
       ? body.club_roles.map((role) => String(role).trim()).filter(Boolean)
@@ -37,8 +35,8 @@ function validateMemberPayload(body: Record<string, unknown>) {
     fieldErrors.name = 'Bitte einen Namen eingeben.';
   }
 
-  if (!payload.bio) {
-    fieldErrors.bio = 'Bitte eine Beschreibung eingeben.';
+  if (!payload.description) {
+    fieldErrors.description = 'Bitte eine Beschreibung eingeben.';
   }
 
   if (!payload.image_url) {

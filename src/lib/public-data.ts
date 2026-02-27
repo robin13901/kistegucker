@@ -1,4 +1,4 @@
-import { cache } from 'react';
+import { unstable_noStore as noStore } from 'next/cache';
 import { getSupabaseClient } from '@/lib/supabase';
 
 type CastEntry = { member_name: string; role: string; member_id?: string };
@@ -33,7 +33,8 @@ export type PublicMember = {
   participations: Participation[];
 };
 
-export const getPublicEvents = cache(async (): Promise<PublicEvent[]> => {
+export async function getPublicEvents(): Promise<PublicEvent[]> {
+  noStore();
   const supabase = getSupabaseClient();
 
   if (!supabase) {
@@ -51,9 +52,10 @@ export const getPublicEvents = cache(async (): Promise<PublicEvent[]> => {
   }
 
   return data;
-});
+}
 
-export const getPublicMembers = cache(async (): Promise<PublicMember[]> => {
+export async function getPublicMembers(): Promise<PublicMember[]> {
+  noStore();
   const supabase = getSupabaseClient();
 
   if (!supabase) {
@@ -67,4 +69,4 @@ export const getPublicMembers = cache(async (): Promise<PublicMember[]> => {
   }
 
   return data;
-});
+}

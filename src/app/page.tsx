@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatedSection } from '@/components/animated-section';
-import { formatDateTime } from '@/lib/date-time';
 import { getPublicPlays } from '@/lib/public-data';
 
 function formatDate(value: string) {

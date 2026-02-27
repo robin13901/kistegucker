@@ -1,256 +1,134 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { slugify } from '@/lib/format';
 
 const DEFAULT_VENUE = 'Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)';
-const allowedImageRatios = [1, 4 / 3, 16 / 9];
 
 type CastEntry = { member_name: string; role: string };
 
-function toSlug(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
-    .replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+function parseDateTime(date: string, time: string) {
+  return `${date}T${time}:00`;
 }
 
-function getImageSize(base64DataUrl: string): Promise<{ width: number; height: number } | null> {
-  return new Promise((resolve) => {
-    const match = base64DataUrl.match(/^data:(.+);base64,(.+)$/);
-    if (!match) {
-      resolve(null);
-      return;
-    }
-
-    const mimeType = match[1];
-    const buffer = Buffer.from(match[2], 'base64');
-
-    if (mimeType.includes('png') && buffer.length >= 24) {
-      resolve({ width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) });
-      return;
-    }
-
-    if ((mimeType.includes('jpeg') || mimeType.includes('jpg')) && buffer.length > 4) {
-      let offset = 2;
-      while (offset < buffer.length) {
-        if (buffer[offset] !== 0xff) {
-          break;
-        }
-
-        const marker = buffer[offset + 1];
-        const length = buffer.readUInt16BE(offset + 2);
-
-        if (marker >= 0xc0 && marker <= 0xc3) {
-          resolve({ height: buffer.readUInt16BE(offset + 5), width: buffer.readUInt16BE(offset + 7) });
-          return;
-        }
-
-        offset += 2 + length;
-      }
-    }
-
-    resolve(null);
-  });
+async function ensurePlay(admin: NonNullable<Awaited<ReturnType<typeof requireAdmin>>>, title: string, description: string, posterImage?: string) {
+  const slug = slugify(title);
+  const { data: existing } = await admin.supabase.from('plays').select('*').eq('slug', slug).maybeSingle();
+  if (existing) {
+    const { data } = await admin.supabase.from('plays').update({ title, description, poster_image: posterImage ?? null, updated_at: new Date().toISOString() }).eq('id', existing.id).select('*').single();
+    return data;
+  }
+  const { data } = await admin.supabase.from('plays').insert({ title, description, poster_image: posterImage ?? null, slug }).select('*').single();
+  return data;
 }
 
-function isAllowedImageRatio(width: number, height: number) {
-  if (width <= 0 || height <= 0) {
-    return false;
-  }
+async function syncCast(admin: NonNullable<Awaited<ReturnType<typeof requireAdmin>>>, playId: string, castEntries: CastEntry[]) {
+  await admin.supabase.from('play_cast').delete().eq('play_id', playId);
+  const { data: members } = await admin.supabase.from('members').select('id,name');
+  const memberByName = new Map((members ?? []).map((member) => [member.name, member.id]));
+  const payload = castEntries
+    .filter((entry) => entry.member_name && entry.role)
+    .map((entry) => ({ play_id: playId, member_id: memberByName.get(entry.member_name), role: entry.role }))
+    .filter((entry) => entry.member_id);
 
-  const ratio = width / height;
-  return allowedImageRatios.some((allowed) => Math.abs(ratio - allowed) <= 0.03);
-}
-
-async function validateEventPayload(body: Record<string, unknown>) {
-  const fieldErrors: Record<string, string> = {};
-  const castEntries: CastEntry[] = Array.isArray(body.cast_entries)
-    ? body.cast_entries
-        .map((entry) => ({
-          member_name: String((entry as CastEntry)?.member_name ?? '').trim(),
-          role: String((entry as CastEntry)?.role ?? '').trim()
-        }))
-        .filter((entry) => entry.member_name || entry.role)
-    : [];
-
-  const payload = {
-    title: String(body.title ?? '').trim(),
-    slug: toSlug(String(body.title ?? '')),
-    description: String(body.description ?? '').trim(),
-    event_date: body.event_date,
-    performance_time: body.performance_time,
-    admission_time: body.admission_time,
-    venue: String(body.venue ?? '').trim() || DEFAULT_VENUE,
-    hero_image_url: String(body.hero_image_url ?? '').trim() || null,
-    cast_entries: castEntries,
-    total_seats: Number(body.total_seats ?? 0),
-    online_seat_limit: Number(body.online_seat_limit ?? 0)
-  };
-
-  if (!payload.title) {
-    fieldErrors.title = 'Bitte einen Titel eingeben.';
-  }
-  if (!payload.description) {
-    fieldErrors.description = 'Bitte eine Beschreibung eingeben.';
-  }
-  if (!payload.event_date) {
-    fieldErrors.event_date = 'Bitte ein Aufführungsdatum wählen.';
-  }
-  if (!payload.performance_time) {
-    fieldErrors.performance_time = 'Bitte eine Aufführungszeit angeben.';
-  }
-  if (!payload.admission_time) {
-    fieldErrors.admission_time = 'Bitte eine Einlasszeit angeben.';
-  }
-  if (!Number.isFinite(payload.total_seats) || payload.total_seats < 1) {
-    fieldErrors.total_seats = 'Bitte die Gesamtanzahl Plätze angeben.';
-  }
-  if (!Number.isFinite(payload.online_seat_limit) || payload.online_seat_limit < 1) {
-    fieldErrors.online_seat_limit = 'Bitte die Anzahl Online-Reservierungen angeben.';
-  }
-
-  if (payload.online_seat_limit > payload.total_seats) {
-    fieldErrors.online_seat_limit = 'Online-Reservierungen dürfen nicht höher als die Gesamtplätze sein.';
-  }
-
-  castEntries.forEach((entry, index) => {
-    if (!entry.role) {
-      fieldErrors[`cast_entries.${index}.role`] = 'Bitte einen Rollennamen angeben.';
-    }
-    if (!entry.member_name) {
-      fieldErrors[`cast_entries.${index}.member_name`] = 'Bitte ein Mitglied auswählen.';
-    }
-  });
-
-  if (payload.hero_image_url) {
-    const dimensions = await getImageSize(payload.hero_image_url);
-    if (dimensions && !isAllowedImageRatio(dimensions.width, dimensions.height)) {
-      fieldErrors.hero_image_url = 'Bitte ein Bild im Format 1:1, 4:3 oder 16:9 hochladen.';
-    }
-  }
-
-  return { payload, fieldErrors };
-}
-
-
-
-async function syncMembersFromEvent(admin: Awaited<ReturnType<typeof requireAdmin>>, title: string, castEntries: CastEntry[]) {
-  if (!admin) return;
-  const { data: members } = await admin.supabase.from('members').select('id,name,participations');
-  if (!members) return;
-
-  const roleByMember = new Map(castEntries.map((entry) => [entry.member_name, entry.role]));
-
-  await Promise.all((members ?? []).map(async (member) => {
-    const participations = Array.isArray(member.participations) ? [...member.participations] : [];
-    const withoutCurrentPiece = participations.filter((entry: { piece?: string }) => entry?.piece !== title);
-    const role = roleByMember.get(member.name);
-    const next = role ? [...withoutCurrentPiece, { piece: title, role }] : withoutCurrentPiece;
-    await admin.supabase.from('members').update({ participations: next }).eq('id', member.id);
-  }));
+  if (payload.length > 0) await admin.supabase.from('play_cast').insert(payload as Array<{ play_id: string; member_id: string; role: string }>);
 }
 
 export async function GET() {
   const admin = await requireAdmin();
-
-  if (!admin) {
-    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
-  }
+  if (!admin) return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
 
   const { data, error } = await admin.supabase
-    .from('events')
-    .select('*')
-    .order('event_date', { ascending: true })
-    .order('performance_time', { ascending: true });
+    .from('performances')
+    .select('id,start_datetime,doors_datetime,venue,capacity,online_quota,reserved_online_tickets,play:plays(id,title,description,slug,poster_image),play_cast:plays(play_cast(role,member:members(name)))')
+    .order('start_datetime', { ascending: true });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  return NextResponse.json({ data });
+  const mapped = (data ?? []).map((row) => {
+    const play = Array.isArray(row.play) ? row.play[0] : row.play;
+    const castWrap = Array.isArray(row.play_cast) ? row.play_cast[0] : row.play_cast;
+    const castEntries = (castWrap?.play_cast ?? []).map((entry: { role: string; member: { name: string } | Array<{ name: string }> }) => ({
+      role: entry.role,
+      member_name: Array.isArray(entry.member) ? entry.member[0]?.name : entry.member?.name
+    }));
+    return {
+      id: row.id,
+      slug: play?.slug,
+      title: play?.title,
+      description: play?.description,
+      event_date: row.start_datetime.slice(0, 10),
+      performance_time: row.start_datetime.slice(11, 16),
+      admission_time: row.doors_datetime?.slice(11, 16) ?? '',
+      venue: row.venue,
+      hero_image_url: play?.poster_image,
+      cast_entries: castEntries,
+      total_seats: row.capacity,
+      online_seat_limit: row.online_quota,
+      reserved_online_tickets: row.reserved_online_tickets
+    };
+  });
+
+  return NextResponse.json({ data: mapped });
 }
 
 export async function POST(request: Request) {
   const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
+  const body = await request.json();
 
-  if (!admin) {
-    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
-  }
+  const play = await ensurePlay(admin, String(body.title ?? ''), String(body.description ?? ''), String(body.hero_image_url ?? ''));
+  if (!play) return NextResponse.json({ error: 'Stück konnte nicht gespeichert werden.' }, { status: 400 });
 
-  const body = (await request.json()) as Record<string, unknown>;
-  const { payload, fieldErrors } = await validateEventPayload(body);
+  const payload = {
+    play_id: play.id,
+    start_datetime: parseDateTime(String(body.event_date ?? ''), String(body.performance_time ?? '00:00')),
+    doors_datetime: body.admission_time ? parseDateTime(String(body.event_date ?? ''), String(body.admission_time)) : null,
+    venue: String(body.venue ?? '') || DEFAULT_VENUE,
+    capacity: Number(body.total_seats ?? 0),
+    online_quota: Number(body.online_seat_limit ?? 0)
+  };
 
-  if (Object.keys(fieldErrors).length) {
-    return NextResponse.json({ error: 'Bitte korrigiere die Eingaben im Formular.', fieldErrors }, { status: 400 });
-  }
+  const { data, error } = await admin.supabase.from('performances').insert(payload).select('*').single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  const { data, error } = await admin.supabase.from('events').insert(payload).select('*').single();
-
-  if (error) {
-    return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
-  }
-
-  await syncMembersFromEvent(admin, data.title, data.cast_entries ?? []);
+  await syncCast(admin, play.id, Array.isArray(body.cast_entries) ? body.cast_entries : []);
   return NextResponse.json({ data });
 }
 
 export async function PUT(request: Request) {
   const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
+  const body = await request.json();
+  if (!body.id) return NextResponse.json({ error: 'Event-ID fehlt' }, { status: 400 });
 
-  if (!admin) {
-    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
-  }
-
-  const body = (await request.json()) as Record<string, unknown>;
-
-  if (!body.id) {
-    return NextResponse.json({ error: 'Event-ID fehlt' }, { status: 400 });
-  }
-
-  const { payload, fieldErrors } = await validateEventPayload(body);
-
-  if (Object.keys(fieldErrors).length) {
-    return NextResponse.json({ error: 'Bitte korrigiere die Eingaben im Formular.', fieldErrors }, { status: 400 });
-  }
+  const play = await ensurePlay(admin, String(body.title ?? ''), String(body.description ?? ''), String(body.hero_image_url ?? ''));
+  if (!play) return NextResponse.json({ error: 'Stück konnte nicht gespeichert werden.' }, { status: 400 });
 
   const { data, error } = await admin.supabase
-    .from('events')
-    .update(payload)
+    .from('performances')
+    .update({
+      play_id: play.id,
+      start_datetime: parseDateTime(String(body.event_date ?? ''), String(body.performance_time ?? '00:00')),
+      doors_datetime: body.admission_time ? parseDateTime(String(body.event_date ?? ''), String(body.admission_time)) : null,
+      venue: String(body.venue ?? '') || DEFAULT_VENUE,
+      capacity: Number(body.total_seats ?? 0),
+      online_quota: Number(body.online_seat_limit ?? 0)
+    })
     .eq('id', body.id)
     .select('*')
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
-  }
-
-  await syncMembersFromEvent(admin, data.title, data.cast_entries ?? []);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  await syncCast(admin, play.id, Array.isArray(body.cast_entries) ? body.cast_entries : []);
   return NextResponse.json({ data });
 }
 
 export async function DELETE(request: Request) {
   const admin = await requireAdmin();
-
-  if (!admin) {
-    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
-  }
-
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-
-  if (!id) {
-    return NextResponse.json({ error: 'Event-ID fehlt' }, { status: 400 });
-  }
-
-  const { error } = await admin.supabase.from('events').delete().eq('id', id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
+  if (!admin) return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
+  const id = new URL(request.url).searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'Event-ID fehlt' }, { status: 400 });
+  const { error } = await admin.supabase.from('performances').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

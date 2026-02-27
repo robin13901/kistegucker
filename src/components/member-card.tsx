@@ -32,7 +32,7 @@ export function MemberCard({ id, name, description, imageUrl, clubRoles, partici
       {participations.length > 0 && (
         <ul className="mt-4 space-y-1 text-sm text-zinc-600">
           {participations.map((participation) => (
-            <li key={`${participation.piece}-${participation.role}`}>• {participation.piece}: {participation.role}</li>
+            <li key={`${participation.piece}-${participation.role}`}>Mitgespielt in: {participation.piece} — Rolle: {participation.role}</li>
           ))}
         </ul>
       )}

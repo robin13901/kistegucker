@@ -53,8 +53,8 @@ export default async function HomePage() {
                       </div>
                     ))}
                   </div>
+                  <Link href={`/events/${play.slug}`} className="mt-3 inline-flex font-semibold text-accent">Details →</Link>
                 </div>
-                <Link href={`/events/${play.slug}`} className="mt-3 inline-flex font-semibold text-accent">Details →</Link>
               </article>
             ))}
           </div>

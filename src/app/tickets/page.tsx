@@ -1,4 +1,5 @@
 import { ReservationForm } from '@/components/reservation-form';
+import { formatDateTime } from '@/lib/format';
 import { getPublicPlays } from '@/lib/public-data';
 
 export default async function TicketsPage({ searchParams }: { searchParams?: { performance?: string } }) {
@@ -14,7 +15,7 @@ export default async function TicketsPage({ searchParams }: { searchParams?: { p
     <div className="container-default grid gap-8 py-12 md:grid-cols-[1fr_1.2fr]">
       <section>
         <h1 className="text-3xl font-bold">Ticket-Reservierung</h1>
-        <p className="mt-2 text-zinc-700">{selected.playTitle} · {new Date(selected.start_datetime).toLocaleString('de-DE')}</p>
+        <p className="mt-2 text-zinc-700">{selected.playTitle} · {formatDateTime(selected.start_datetime)}</p>
       </section>
       <ReservationForm eventId={selected.id} />
     </div>

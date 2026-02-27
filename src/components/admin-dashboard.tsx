@@ -620,7 +620,6 @@ export function AdminDashboard() {
                 <option key={entry.id} value={entry.id}>{entry.title}</option>
               ))}
             </select>
-            <a href={`/api/admin/reservations?format=csv${selectedReservationEventId ? `&event_id=${selectedReservationEventId}` : ''}`} className="rounded-lg border px-3 py-2 text-sm">Export CSV</a>
             <a href={`/api/admin/reservations?format=xlsx${selectedReservationEventId ? `&event_id=${selectedReservationEventId}` : ''}`} className="rounded-lg border px-3 py-2 text-sm">Export Excel</a>
           </div>
 

@@ -1,4 +1,4 @@
-import { unstable_noStore as noStore } from 'next/cache';
+import { unstable_cache } from 'next/cache';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export type PublicPerformance = {
@@ -45,8 +45,7 @@ type PlayRow = {
 
 type MemberCastRow = { member_id: string; role: string; play: { title: string } | Array<{ title: string }> };
 
-export async function getPublicPlays(): Promise<PublicPlay[]> {
-  noStore();
+const loadPublicPlays = unstable_cache(async (): Promise<PublicPlay[]> => {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
 
@@ -75,10 +74,9 @@ export async function getPublicPlays(): Promise<PublicPlay[]> {
       .filter((entry) => entry.member_id && entry.member_name)
       .map((entry) => ({ ...entry, member_id: entry.member_id as string, member_name: entry.member_name as string }))
   }));
-}
+}, ['public-plays'], { revalidate: 120 });
 
-export async function getPublicMembers(): Promise<PublicMember[]> {
-  noStore();
+const loadPublicMembers = unstable_cache(async (): Promise<PublicMember[]> => {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
 
@@ -97,4 +95,12 @@ export async function getPublicMembers(): Promise<PublicMember[]> {
   });
 
   return (members ?? []).map((member) => ({ ...member, participations: castByMember.get(member.id) ?? [] }));
+}, ['public-members'], { revalidate: 120 });
+
+export async function getPublicPlays(): Promise<PublicPlay[]> {
+  return await loadPublicPlays();
+}
+
+export async function getPublicMembers(): Promise<PublicMember[]> {
+  return await loadPublicMembers();
 }

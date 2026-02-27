@@ -20,7 +20,7 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
         <ul className="mt-2 grid gap-2 md:grid-cols-2">
           {play.cast.map((entry, index) => (
             <li key={`${entry.member_name}-${entry.role}-${index}`} className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
-              <span className="font-semibold text-accent">{entry.member_name}</span>{' '}
+              <Link href={`/mitglieder#member-${entry.member_id}`} className="font-semibold text-accent">{entry.member_name}</Link>{' '}
               <span className="text-zinc-500">als</span>{' '}
               <span className="font-semibold text-zinc-900">{entry.role}</span>
             </li>))}

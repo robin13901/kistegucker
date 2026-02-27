@@ -24,7 +24,6 @@ export async function GET(request: Request) {
     .order('reserved_at', { ascending: false });
 
   if (performanceId) query = query.eq('performance_id', performanceId);
-  if (playId) query = query.eq('performance.play_id', playId);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
     const performance = Array.isArray(row.performance) ? row.performance[0] : row.performance;
     const play = Array.isArray(performance?.play) ? performance?.play[0] : performance?.play;
     return { ...row, performance, play };
-  });
+  }).filter((row) => (playId ? row.play?.id === playId : true));
 
   if (format === 'xlsx') {
     const byPerformance = new Map<string, typeof rows>();

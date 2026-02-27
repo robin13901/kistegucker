@@ -86,7 +86,7 @@ alter table public.play_cast disable row level security;
 alter table public.reservations disable row level security;
 
 insert into public.profiles (id, role)
-values ('b484a9be-0edc-486b-bb02-4bf9a95dd1f4', 'admin');
+values ('8bf04889-ad14-46c2-b985-48f3ac1ee0fb', 'admin');
 
 create or replace function public.increment_reserved_tickets(performance_id_input uuid, ticket_amount integer)
 returns boolean

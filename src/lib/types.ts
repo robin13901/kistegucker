@@ -2,7 +2,7 @@ export type Member = {
   id: string;
   name: string;
   description: string;
-  image_url: string;
+  image_url?: string | null;
   club_roles: string[];
   participations: Array<{ piece: string; role: string }>;
 };

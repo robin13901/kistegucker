@@ -19,7 +19,7 @@ export default async function EventsPage() {
         <div className="space-y-4">
           {upcoming.map((event) => (
             <article key={event.id} className="overflow-hidden rounded-2xl bg-white shadow-card">
-              {event.hero_image_url && <Image src={event.hero_image_url} alt={event.title} width={1200} height={700} className="h-56 w-full object-cover" />}
+              {event.hero_image_url && <Image src={event.hero_image_url} alt={event.title} width={1200} height={700} className="h-56 w-full object-cover" sizes="100vw" />}
               <div className="p-6">
                 <p className="text-sm text-zinc-500">{formatDateTime(event.event_date, event.performance_time)}</p>
                 <h2 className="mt-1 text-xl font-semibold">{event.title}</h2>
@@ -47,7 +47,7 @@ export default async function EventsPage() {
         <div className="space-y-4">
           {past.map((event) => (
             <article key={event.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
-              {event.hero_image_url && <Image src={event.hero_image_url} alt={event.title} width={1200} height={700} className="h-52 w-full object-cover" />}
+              {event.hero_image_url && <Image src={event.hero_image_url} alt={event.title} width={1200} height={700} className="h-52 w-full object-cover" sizes="100vw" />}
               <div className="p-6">
                 <p className="text-sm text-zinc-500">{formatDateTime(event.event_date, event.performance_time)}</p>
                 <h3 className="text-lg font-semibold">{event.title}</h3>

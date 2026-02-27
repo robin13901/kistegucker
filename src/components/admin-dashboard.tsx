@@ -10,6 +10,8 @@ import {
   useState
 } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { MemberCard } from '@/components/member-card';
+import { slugify, toHourMinute } from '@/lib/format';
 
 type AdminState = {
   email: string;
@@ -240,8 +242,10 @@ export function AdminDashboard() {
       } else {
         setMemberErrors((prev) => ({ ...prev, image_url: '' }));
         setMemberForm((prev) => ({ ...prev, image_url: url }));
+        const suggestedName = `${slugify(memberForm.name || file.name.replace(/\.[^.]+$/, ''))}.webp`;
+        setState((prev) => ({ ...prev, feedback: `Bild erfolgreich verarbeitet (WebP/Max 1MB). Dateiname: ${suggestedName}` }));
       }
-      setState((prev) => ({ ...prev, feedback: 'Bild erfolgreich verarbeitet (WebP/Max 1MB).' }));
+      
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Bild konnte nicht hochgeladen werden.';
       setState((prev) => ({ ...prev, feedback: message }));
@@ -266,7 +270,6 @@ export function AdminDashboard() {
     if (!payload.performance_time) localErrors.performance_time = 'Bitte eine Aufführungszeit angeben.';
     if (!payload.admission_time) localErrors.admission_time = 'Bitte eine Einlasszeit angeben.';
     if (!payload.description.trim()) localErrors.description = 'Bitte eine Beschreibung eingeben.';
-    if (!payload.hero_image_url) localErrors.hero_image_url = 'Bitte ein Titelbild hochladen.';
     if (!payload.total_seats || payload.total_seats < 1) localErrors.total_seats = 'Bitte die Gesamtanzahl Plätze angeben.';
     if (!payload.online_seat_limit || payload.online_seat_limit < 1) localErrors.online_seat_limit = 'Bitte die Anzahl Online-Reservierungen angeben.';
     if (payload.total_seats && payload.online_seat_limit && payload.online_seat_limit > payload.total_seats) {
@@ -318,7 +321,6 @@ export function AdminDashboard() {
 
     if (!payload.name.trim()) localErrors.name = 'Bitte einen Namen eingeben.';
     if (!payload.description.trim()) localErrors.description = 'Bitte eine Beschreibung eingeben.';
-    if (!payload.image_url) localErrors.image_url = 'Bitte ein Foto hochladen.';
 
     payload.participations.forEach((entry, index) => {
       if (!entry.piece.trim()) localErrors[`participations.${index}.piece`] = 'Bitte ein Stück auswählen.';
@@ -409,9 +411,9 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => setActiveTab('events')} className="rounded-xl border px-4 py-2">Aufführungen</button>
-        <button onClick={() => setActiveTab('members')} className="rounded-xl border px-4 py-2">Mitglieder</button>
-        <button onClick={() => setActiveTab('reservations')} className="rounded-xl border px-4 py-2">Reservierungen</button>
+        <button onClick={() => setActiveTab('events')} className={`rounded-xl border px-4 py-2 ${activeTab === 'events' ? 'border-accent bg-accent text-white' : ''}`}>Aufführungen</button>
+        <button onClick={() => setActiveTab('members')} className={`rounded-xl border px-4 py-2 ${activeTab === 'members' ? 'border-accent bg-accent text-white' : ''}`}>Mitglieder</button>
+        <button onClick={() => setActiveTab('reservations')} className={`rounded-xl border px-4 py-2 ${activeTab === 'reservations' ? 'border-accent bg-accent text-white' : ''}`}>Reservierungen</button>
       </div>
 
       {activeTab === 'events' && (
@@ -431,7 +433,7 @@ export function AdminDashboard() {
           </div>
 
           {showEventForm && (
-            <form onSubmit={saveEvent} className="mt-4 grid gap-3 md:grid-cols-2">
+            <form onSubmit={saveEvent} className="mt-4 space-y-3">
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium">Titelbild hochladen</label>
                 <input ref={eventImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'event')} className="hidden" />
@@ -449,13 +451,13 @@ export function AdminDashboard() {
               <FieldInput id="event-admission-time" type="time" label="Einlassbeginn" value={eventForm.admission_time} onChange={(event) => setEventForm((prev) => ({ ...prev, admission_time: event.target.value }))} required />
               <FieldInput id="event-total-seats" type="number" min={1} label="Gesamtanzahl Plätze" value={eventForm.total_seats} onChange={(event) => setEventForm((prev) => ({ ...prev, total_seats: event.target.value === '' ? '' : Number(event.target.value) }))} required />
               <FieldInput id="event-online-seats" type="number" min={1} max={eventForm.total_seats || undefined} label="Anzahl Online-Reservierungen" value={eventForm.online_seat_limit} onChange={(event) => setEventForm((prev) => ({ ...prev, online_seat_limit: event.target.value === '' ? '' : Number(event.target.value) }))} required />
-              <AutoTextarea id="event-description" label="Beschreibung" value={eventForm.description} onChange={(event) => setEventForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
+              <AutoTextarea id="event-description" label="Beschreibung" value={eventForm.description} onChange={(event) => setEventForm((prev) => ({ ...prev, description: event.target.value }))} required className="min-h-[120px]" />
 
-              <div className="md:col-span-2 space-y-2">
+              <div className="space-y-2">
                 <p className="text-sm font-medium">Besetzung</p>
                 {eventForm.cast_entries.map((entry, index) => (
                   <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                    <FieldInput label="Mitglied" value={entry.member_name} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))} />
+                    <label className="flex min-h-[84px] flex-col gap-1"><span className="text-sm font-medium text-zinc-700">Mitglied</span><select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.member_name} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))}><option value="">Mitglied auswählen</option>{members.map((member) => (<option key={member.id} value={member.name}>{member.name}</option>))}</select></label>
                     <FieldInput label="Rolle" value={entry.role} onChange={(event) => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
                     <button type="button" className="h-9 w-9 self-center rounded-full border text-sm text-red-700 md:self-end" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
                   </div>
@@ -463,7 +465,7 @@ export function AdminDashboard() {
                 <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setEventForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { member_name: '', role: '' }] }))}>Eintrag hinzufügen</button>
               </div>
 
-              <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white md:col-span-2">Speichern</button>
+              <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white">Speichern</button>
             </form>
           )}
 
@@ -474,7 +476,7 @@ export function AdminDashboard() {
                 <div className="mt-3 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold">{entry.title}</h3>
-                    <p className="text-sm text-zinc-500">{entry.event_date} · {entry.performance_time} Uhr</p>
+                    <p className="text-sm text-zinc-500">{entry.event_date} · {toHourMinute(entry.performance_time)} Uhr</p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -520,19 +522,19 @@ export function AdminDashboard() {
           </div>
 
           {showMemberForm && (
-            <form onSubmit={saveMember} className="mt-4 grid gap-3 md:grid-cols-2">
+            <form onSubmit={saveMember} className="mt-4 space-y-3">
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium">Mitgliedsbild hochladen</label>
                 <input ref={memberImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'member')} className="hidden" />
                 <button type="button" onClick={() => memberImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">Bild auswählen</button>
                 {memberErrors.image_url && <p className="mt-1 text-xs text-red-600">{memberErrors.image_url}</p>}
-                {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 h-56 w-full rounded-xl border border-zinc-200 object-cover" />}
+                {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 aspect-[4/3] w-[320px] max-w-full rounded-xl border border-zinc-200 object-cover" />}
               </div>
 
               <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
-              <AutoTextarea id="member-description" label="Beschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value }))} required className="md:col-span-2 min-h-[120px]" />
+              <AutoTextarea id="member-description" label="Beschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value }))} required className="min-h-[120px]" />
 
-              <div className="md:col-span-2 space-y-2">
+              <div className="space-y-2">
                 <p className="text-sm font-medium">Vereinsrollen</p>
                 <div className="flex gap-2">
                   <input className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={clubRoleDraft} onChange={(event) => setClubRoleDraft(event.target.value)} placeholder="z. B. Regie" />
@@ -583,43 +585,26 @@ export function AdminDashboard() {
                 <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setMemberForm((prev) => ({ ...prev, participations: [...prev.participations, { piece: '', role: '' }] }))}>Eintrag hinzufügen</button>
               </div>
 
-              <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white md:col-span-2">Speichern</button>
+              <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white">Speichern</button>
             </form>
           )}
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {members.map((entry) => (
-              <article key={entry.id} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-zinc-200">
-                <img src={entry.image_url} alt={entry.name} className="h-56 w-full rounded-xl object-cover" />
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl font-semibold">{entry.name}</h3>
-                    <p className="text-sm font-medium text-accent">{entry.description}</p>
-                  </div>
+              <MemberCard
+                key={entry.id}
+                name={entry.name}
+                description={entry.description}
+                imageUrl={entry.image_url}
+                clubRoles={entry.club_roles ?? []}
+                participations={entry.participations}
+                actions={(
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMemberForm(entry);
-                        setShowMemberForm(true);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="rounded-lg border px-2 py-1 text-sm"
-                      aria-label="Mitglied bearbeiten"
-                      title="Bearbeiten"
-                    >
-                      ✏️
-                    </button>
+                    <button type="button" onClick={() => { setMemberForm(entry); setShowMemberForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg border px-2 py-1 text-sm" aria-label="Mitglied bearbeiten" title="Bearbeiten">✏️</button>
                     <button type="button" onClick={() => deleteMember(entry.id)} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Mitglied löschen" title="Löschen">🗑️</button>
                   </div>
-                </div>
-                <p className="mt-2 text-sm text-zinc-700">{entry.description}</p>
-                <ul className="mt-4 space-y-1 text-sm text-zinc-600">
-                  {entry.participations?.map((participation) => (
-                    <li key={`${participation.piece}-${participation.role}`}>• {participation.piece}: {participation.role}</li>
-                  ))}
-                </ul>
-              </article>
+                )}
+              />
             ))}
           </div>
         </section>
@@ -636,7 +621,7 @@ export function AdminDashboard() {
               ))}
             </select>
             <a href={`/api/admin/reservations?format=csv${selectedReservationEventId ? `&event_id=${selectedReservationEventId}` : ''}`} className="rounded-lg border px-3 py-2 text-sm">Export CSV</a>
-            <a href={`/api/admin/reservations?format=xls${selectedReservationEventId ? `&event_id=${selectedReservationEventId}` : ''}`} className="rounded-lg border px-3 py-2 text-sm">Export Excel</a>
+            <a href={`/api/admin/reservations?format=xlsx${selectedReservationEventId ? `&event_id=${selectedReservationEventId}` : ''}`} className="rounded-lg border px-3 py-2 text-sm">Export Excel</a>
           </div>
 
           <div className="mt-4 space-y-2">

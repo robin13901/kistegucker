@@ -106,9 +106,6 @@ async function validateEventPayload(body: Record<string, unknown>) {
   if (!payload.admission_time) {
     fieldErrors.admission_time = 'Bitte eine Einlasszeit angeben.';
   }
-  if (!payload.hero_image_url) {
-    fieldErrors.hero_image_url = 'Bitte ein Titelbild hochladen.';
-  }
   if (!Number.isFinite(payload.total_seats) || payload.total_seats < 1) {
     fieldErrors.total_seats = 'Bitte die Gesamtanzahl Plätze angeben.';
   }
@@ -137,6 +134,24 @@ async function validateEventPayload(body: Record<string, unknown>) {
   }
 
   return { payload, fieldErrors };
+}
+
+
+
+async function syncMembersFromEvent(admin: Awaited<ReturnType<typeof requireAdmin>>, title: string, castEntries: CastEntry[]) {
+  if (!admin) return;
+  const { data: members } = await admin.supabase.from('members').select('id,name,participations');
+  if (!members) return;
+
+  const roleByMember = new Map(castEntries.map((entry) => [entry.member_name, entry.role]));
+
+  await Promise.all((members ?? []).map(async (member) => {
+    const participations = Array.isArray(member.participations) ? [...member.participations] : [];
+    const withoutCurrentPiece = participations.filter((entry: { piece?: string }) => entry?.piece !== title);
+    const role = roleByMember.get(member.name);
+    const next = role ? [...withoutCurrentPiece, { piece: title, role }] : withoutCurrentPiece;
+    await admin.supabase.from('members').update({ participations: next }).eq('id', member.id);
+  }));
 }
 
 export async function GET() {
@@ -179,6 +194,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
   }
 
+  await syncMembersFromEvent(admin, data.title, data.cast_entries ?? []);
   return NextResponse.json({ data });
 }
 
@@ -212,6 +228,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
   }
 
+  await syncMembersFromEvent(admin, data.title, data.cast_entries ?? []);
   return NextResponse.json({ data });
 }
 

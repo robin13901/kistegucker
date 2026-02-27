@@ -39,9 +39,6 @@ function validateMemberPayload(body: Record<string, unknown>) {
     fieldErrors.description = 'Bitte eine Beschreibung eingeben.';
   }
 
-  if (!payload.image_url) {
-    fieldErrors.image_url = 'Bitte ein Foto hochladen.';
-  }
 
   payload.participations.forEach((entry, index) => {
     if (!entry.piece) {
@@ -54,6 +51,24 @@ function validateMemberPayload(body: Record<string, unknown>) {
   });
 
   return { payload, fieldErrors };
+}
+
+
+
+async function syncEventsFromMember(admin: Awaited<ReturnType<typeof requireAdmin>>, memberName: string, participations: Participation[]) {
+  if (!admin) return;
+  const { data: events } = await admin.supabase.from('events').select('id,title,cast_entries');
+  if (!events) return;
+
+  const roleByPiece = new Map(participations.map((entry) => [entry.piece, entry.role]));
+
+  await Promise.all(events.map(async (event) => {
+    const castEntries = Array.isArray(event.cast_entries) ? [...event.cast_entries] : [];
+    const withoutMember = castEntries.filter((entry: { member_name?: string }) => entry?.member_name !== memberName);
+    const role = roleByPiece.get(event.title);
+    const next = role ? [...withoutMember, { member_name: memberName, role }] : withoutMember;
+    await admin.supabase.from('events').update({ cast_entries: next }).eq('id', event.id);
+  }));
 }
 
 export async function GET() {
@@ -92,6 +107,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
   }
 
+  await syncEventsFromMember(admin, data.name, data.participations ?? []);
   return NextResponse.json({ data });
 }
 
@@ -125,6 +141,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
   }
 
+  await syncEventsFromMember(admin, data.name, data.participations ?? []);
   return NextResponse.json({ data });
 }
 

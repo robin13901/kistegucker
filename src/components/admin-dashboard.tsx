@@ -243,7 +243,7 @@ export function AdminDashboard() {
         setMemberErrors((prev) => ({ ...prev, image_url: '' }));
         setMemberForm((prev) => ({ ...prev, image_url: url }));
         const suggestedName = `${slugify(memberForm.name || file.name.replace(/\.[^.]+$/, ''))}.webp`;
-        setState((prev) => ({ ...prev, feedback: `Bild erfolgreich verarbeitet (WebP/Max 1MB). Dateiname: ${suggestedName}` }));
+        setState((prev) => ({ ...prev, feedback: `Upload bereit: ${suggestedName}` }));
       }
       
     } catch (error) {
@@ -347,7 +347,7 @@ export function AdminDashboard() {
       return;
     }
 
-    setState((prev) => ({ ...prev, feedback: 'Mitglied gespeichert.' }));
+    setState((prev) => ({ ...prev, feedback: '✓ Änderungen gespeichert.' }));
     setMemberForm(initialMember);
     setClubRoleDraft('');
     setShowMemberForm(false);

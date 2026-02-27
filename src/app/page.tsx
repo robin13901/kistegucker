@@ -1,17 +1,25 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatedSection } from '@/components/animated-section';
-import { formatDateTime } from '@/lib/date-time';
-import { getPublicEvents } from '@/lib/public-data';
+import { getPublicPlays } from '@/lib/public-data';
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+}
 
 export default async function HomePage() {
-  const events = await getPublicEvents();
-  const upcoming = events
-    .filter((event) => !event.is_past)
-    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())[0];
-  const past = events
-    .filter((event) => event.is_past)
-    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+  const plays = await getPublicPlays();
+
+  const upcomingPerformances = plays
+    .flatMap((play) => play.performances.filter((p) => !p.is_past).map((performance) => ({ play, performance })))
+    .sort((a, b) => new Date(a.performance.start_datetime).getTime() - new Date(b.performance.start_datetime).getTime());
+
+  const pastPerformances = plays
+    .flatMap((play) => play.performances.filter((p) => p.is_past).map((performance) => ({ play, performance })))
+    .sort((a, b) => new Date(b.performance.start_datetime).getTime() - new Date(a.performance.start_datetime).getTime());
+
+  const upcoming = upcomingPerformances[0];
 
   return (
     <div className="container-default space-y-16 py-12">
@@ -19,7 +27,7 @@ export default async function HomePage() {
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div className="space-y-5">
             <span className="inline-flex rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent">
-              Theaterverein Linsengericht
+              Theaterverein aus Linsengericht
             </span>
             <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
               Bühne frei für <span className="text-accent">Die Kistegucker</span>
@@ -44,25 +52,28 @@ export default async function HomePage() {
           <section className="space-y-6">
             <h2 className="text-2xl font-semibold">Demnächst bei uns</h2>
             <article className="overflow-hidden rounded-2xl bg-white shadow-card">
-              {upcoming.hero_image_url && (
-                <Image src={upcoming.hero_image_url} alt={upcoming.title} width={1200} height={700} className="h-60 w-full object-cover" />
+              {upcoming.play.poster_image && (
+                <Image src={upcoming.play.poster_image} alt={upcoming.play.title} width={1200} height={700} className="h-60 w-full object-cover" />
               )}
               <div className="p-6">
-                <p className="text-sm text-zinc-500">{formatDateTime(upcoming.event_date, upcoming.performance_time)}</p>
-                <h3 className="mt-2 text-xl font-semibold">{upcoming.title}</h3>
-                <p className="mt-2 text-zinc-700">{upcoming.description}</p>
+                <p className="text-sm text-zinc-500">{formatDateTime(upcoming.performance.start_datetime)}</p>
+                <h3 className="mt-2 text-xl font-semibold">{upcoming.play.title}</h3>
+                <p className="mt-2 text-zinc-700">{upcoming.play.description}</p>
                 <div className="mt-4">
                   <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
                     <span>Online-Auslastung</span>
-                    <span>{upcoming.reserved_online_tickets}/{upcoming.online_seat_limit}</span>
+                    <span>{upcoming.performance.reserved_online_tickets}/{upcoming.performance.online_quota}</span>
                   </div>
                   <div className="h-2 rounded-full bg-zinc-200">
-                    <div className="h-2 rounded-full bg-accent" style={{ width: `${Math.min((upcoming.reserved_online_tickets / upcoming.online_seat_limit) * 100, 100)}%` }} />
+                    <div
+                      className="h-2 rounded-full bg-accent"
+                      style={{ width: `${Math.min((upcoming.performance.reserved_online_tickets / upcoming.performance.online_quota) * 100, 100)}%` }}
+                    />
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <Link href="/tickets" className="inline-flex rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Tickets reservieren</Link>
-                  <Link href={`/events/${upcoming.slug}`} className="inline-flex text-sm font-semibold text-accent">Details →</Link>
+                  <Link href={`/tickets?performance=${upcoming.performance.id}`} className="inline-flex rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Tickets reservieren</Link>
+                  <Link href={`/events/${upcoming.play.slug}`} className="inline-flex text-sm font-semibold text-accent">Details →</Link>
                 </div>
               </div>
             </article>
@@ -74,14 +85,14 @@ export default async function HomePage() {
         <section className="space-y-6">
           <h2 className="text-2xl font-semibold">Vergangene Aufführungen</h2>
           <div className="space-y-4">
-            {past.map((event) => (
-              <article key={event.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
-                {event.hero_image_url && <Image src={event.hero_image_url} alt={event.title} width={1200} height={700} className="h-52 w-full object-cover" />}
+            {pastPerformances.map(({ play, performance }) => (
+              <article key={performance.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
+                {play.poster_image && <Image src={play.poster_image} alt={play.title} width={1200} height={700} className="h-52 w-full object-cover" />}
                 <div className="p-6">
-                  <p className="text-sm text-zinc-500">{formatDateTime(event.event_date, event.performance_time)}</p>
-                  <h3 className="mt-2 text-xl font-semibold">{event.title}</h3>
-                  <p className="mt-2 text-zinc-700">{event.description}</p>
-                  <Link href={`/events/${event.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">Details →</Link>
+                  <p className="text-sm text-zinc-500">{formatDateTime(performance.start_datetime)}</p>
+                  <h3 className="mt-2 text-xl font-semibold">{play.title}</h3>
+                  <p className="mt-2 text-zinc-700">{play.description}</p>
+                  <Link href={`/events/${play.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">Details →</Link>
                 </div>
               </article>
             ))}

@@ -16,7 +16,7 @@ type MemberCardProps = {
 
 export function MemberCard({ id, name, description, imageUrl, clubRoles, participations = [], actions }: MemberCardProps) {
   return (
-    <article id={id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
+    <article id={id} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-zinc-200 transition hover:-translate-y-1">
       {imageUrl ? (
         <Image src={imageUrl} alt={name} width={800} height={600} className="h-52 w-full object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
       ) : (

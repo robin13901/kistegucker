@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatedSection } from '@/components/animated-section';
+import { formatDateTime } from '@/lib/date-time';
 import { getPublicPlays } from '@/lib/public-data';
 
 function formatDate(value: string) {
@@ -10,6 +11,7 @@ function formatDate(value: string) {
 export default async function HomePage() {
   const plays = await getPublicPlays();
   const upcomingPlays = plays.filter((play) => play.performances.some((p) => !p.is_past));
+  const pastPlays = plays.filter((play) => play.performances.some((p) => p.is_past));
 
   return (
     <div className="container-default space-y-12 py-12">
@@ -59,6 +61,24 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+       <AnimatedSection>
+        <section className="space-y-6">
+          <h2 className="text-2xl font-semibold">Vergangene Aufführungen</h2>
+          <div className="space-y-4">
+            {pastPlays.map((event) => (
+              <article key={event.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
+                {event.poster_image && <Image src={event.poster_image} alt={event.title} width={1200} height={700} className="h-52 w-full object-cover" />}
+                <div className="p-6">
+                  <h3 className="mt-2 text-xl font-semibold">{event.title}</h3>
+                  <p className="mt-2 text-zinc-700">{event.description}</p>
+                  <p className="mt-2 text-sm text-zinc-500">Termine: {event.performances.map((p) => new Date(p.start_datetime).toLocaleDateString('de-DE')).join(' · ') || '—'}</p>
+                  <Link href={`/events/${event.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">Details →</Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </AnimatedSection>
     </div>
   );
 }

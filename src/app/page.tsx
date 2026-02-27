@@ -4,15 +4,6 @@ import { formatDate } from '@/lib/format';
 import { AnimatedSection } from '@/components/animated-section';
 import { getPublicPlays } from '@/lib/public-data';
 
-function formatDate(value: string): string {
-  const date = new Date(value);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-
-  return `${day}.${month}.${year}`;
-}
-
 export default async function HomePage() {
   const plays = await getPublicPlays();
   const upcomingPlays = plays.filter((play) => play.performances.some((p) => !p.is_past));

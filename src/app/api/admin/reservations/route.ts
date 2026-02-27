@@ -76,7 +76,7 @@ export async function GET(request: Request) {
   const admin = await requireAdmin();
 
   if (!admin) {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -132,7 +132,7 @@ export async function DELETE(request: Request) {
   const admin = await requireAdmin();
 
   if (!admin) {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
   const { searchParams } = new URL(request.url);

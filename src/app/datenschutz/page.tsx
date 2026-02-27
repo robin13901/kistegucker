@@ -2,7 +2,7 @@ export default function DatenschutzPage() {
   return (
     <div className="container-default py-12">
       <div className="mx-auto max-w-3xl space-y-8 rounded-2xl bg-white p-8 shadow-card">
-        <h1 className="text-3xl font-bold">Datenschutzerklärung</h1>
+        <h1 className="break-words text-2xl font-bold sm:text-3xl">Datenschutzerklärung</h1>
         <p className="text-zinc-700">
           Diese Website verarbeitet personenbezogene Daten ausschließlich im notwendigen Umfang und
           gemäß DSGVO.

@@ -1,11 +1,12 @@
 import { ReservationForm } from '@/components/reservation-form';
 import { formatDateTime } from '@/lib/date-time';
-import { events } from '@/lib/mock-data';
+import { getPublicEvents } from '@/lib/public-data';
 
-export default function TicketsPage() {
-    const upcomingEvent = events
+export default async function TicketsPage() {
+  const events = await getPublicEvents();
+  const upcomingEvent = events
     .filter((event) => !event.is_past)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())[0];
 
   if (!upcomingEvent) {
     return (
@@ -27,7 +28,7 @@ export default function TicketsPage() {
           Reserviere deine Plätze einfach online. Du erhältst eine automatische Bestätigung per
           E-Mail.
         </p>
-        <p className="mt-2 text-sm text-zinc-600">{formatDateTime(upcomingEvent.date, upcomingEvent.performance_time)}</p>
+        <p className="mt-2 text-sm text-zinc-600">{formatDateTime(upcomingEvent.event_date, upcomingEvent.performance_time)}</p>
       </section>
       <ReservationForm eventId={upcomingEvent.id} />
     </div>

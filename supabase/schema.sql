@@ -57,17 +57,17 @@ for select using (true);
 create policy "anon insert reservations" on public.reservations
 for insert with check (true);
 
-create policy "admin full access members" on public.members
-for all using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "authenticated full access members" on public.members
+for all using (auth.role() = 'authenticated')
+with check (auth.role() = 'authenticated');
 
-create policy "admin full access events" on public.events
-for all using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "authenticated full access events" on public.events
+for all using (auth.role() = 'authenticated')
+with check (auth.role() = 'authenticated');
 
-create policy "admin full access reservations" on public.reservations
-for all using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "authenticated full access reservations" on public.reservations
+for all using (auth.role() = 'authenticated')
+with check (auth.role() = 'authenticated');
 
 
 create or replace function public.increment_reserved_tickets(event_id_input uuid, ticket_amount integer)

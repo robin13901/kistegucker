@@ -144,7 +144,7 @@ export async function GET() {
   const admin = await requireAdmin();
 
   if (!admin) {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
   const { data, error } = await admin.supabase
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
   const admin = await requireAdmin();
 
   if (!admin) {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
   const body = (await request.json()) as Record<string, unknown>;
@@ -187,7 +187,7 @@ export async function PUT(request: Request) {
   const admin = await requireAdmin();
 
   if (!admin) {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
   const body = (await request.json()) as Record<string, unknown>;
@@ -220,7 +220,7 @@ export async function DELETE(request: Request) {
   const admin = await requireAdmin();
 
   if (!admin) {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   }
 
   const { searchParams } = new URL(request.url);

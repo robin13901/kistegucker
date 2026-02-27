@@ -1,7 +1,9 @@
 import Image from 'next/image';
-import { members } from '@/lib/mock-data';
+import { getPublicMembers } from '@/lib/public-data';
 
-export default function MembersPage() {
+export default async function MembersPage() {
+  const members = await getPublicMembers();
+
   return (
     <div className="container-default py-12">
       <h1 className="mb-8 text-3xl font-bold">Unser Ensemble</h1>

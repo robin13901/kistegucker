@@ -1,10 +1,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatDate } from '@/lib/format';
 import { AnimatedSection } from '@/components/animated-section';
 import { getPublicPlays } from '@/lib/public-data';
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('de-DE');
+function formatDate(value: string): string {
+  const date = new Date(value);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}.${month}.${year}`;
 }
 
 export default async function HomePage() {
@@ -38,24 +44,23 @@ export default async function HomePage() {
         </div>
       </AnimatedSection>
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Kommende Stücke</h2>
+        <h2 className="text-2xl font-semibold">Demnächst bei uns</h2>
         <div className="grid gap-6 md:grid-cols-2">
           {upcomingPlays.map((play) => (
-            <article key={play.id} className="rounded-2xl bg-white p-4 shadow-card">
-              {play.poster_image ? <Image src={play.poster_image} alt={play.title} width={1200} height={800} className="h-48 w-full rounded-xl object-cover" /> : <div className="h-48 w-full rounded-xl bg-zinc-100" />}
+              <article key={play.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
+                {play.poster_image && <Image src={play.poster_image} alt={play.title} width={1200} height={700} className="h-52 w-full object-cover" />}
               <h3 className="mt-3 text-xl font-semibold">{play.title}</h3>
               <p className="text-sm text-zinc-700">{play.description}</p>
-              <p className="mt-2 text-xs text-zinc-500">{play.performances.filter((p) => !p.is_past).slice(0, 4).map((p) => formatDate(p.start_datetime)).join(' · ')}</p>
               <div className="mt-3 space-y-2">
                 {play.performances.filter((p) => !p.is_past).slice(0, 2).map((p) => (
                   <div key={p.id} className="flex items-center justify-between rounded-lg border p-2 text-sm">
                     <span>{formatDate(p.start_datetime)}</span>
                     <span>{p.reserved_online_tickets}/{p.online_quota}</span>
-                    <Link href={`/tickets?performance=${p.id}`} className="font-semibold text-accent">Buchen</Link>
+                    <Link href={`/tickets?performance=${p.id}`} className="font-semibold text-accent">Tickets reservieren →</Link>
                   </div>
                 ))}
               </div>
-              <Link href={`/events/${play.slug}`} className="mt-3 inline-flex font-semibold text-accent">Zum Stück →</Link>
+              <Link href={`/events/${play.slug}`} className="mt-3 inline-flex font-semibold text-accent">Details →</Link>
             </article>
           ))}
         </div>
@@ -70,7 +75,7 @@ export default async function HomePage() {
                 <div className="p-6">
                   <h3 className="mt-2 text-xl font-semibold">{event.title}</h3>
                   <p className="mt-2 text-zinc-700">{event.description}</p>
-                  <p className="mt-2 text-sm text-zinc-500">Termine: {event.performances.map((p) => new Date(p.start_datetime).toLocaleDateString('de-DE')).join(' · ') || '—'}</p>
+                  <p className="mt-2 text-sm text-zinc-500">{event.performances.map((p) => new Date(p.start_datetime).toLocaleDateString('de-DE')).join(' · ') || '—'}</p>
                   <Link href={`/events/${event.slug}`} className="mt-4 inline-flex text-sm font-semibold text-accent">Details →</Link>
                 </div>
               </article>

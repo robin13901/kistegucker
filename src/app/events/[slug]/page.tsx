@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatDateTime } from '@/lib/format';
 import { notFound } from 'next/navigation';
 import { getPublicPlays } from '@/lib/public-data';
 
@@ -17,9 +18,12 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
       <section>
         <h2 className="text-xl font-semibold">Besetzung</h2>
         <ul className="mt-2 grid gap-2 md:grid-cols-2">
-          {play.cast.map((entry) => (
-            <li key={`${entry.member_id}-${entry.role}`} className="rounded-lg border bg-white px-3 py-2 text-sm"><span className="font-semibold">{entry.member_name}</span> — {entry.role}</li>
-          ))}
+          {play.cast.map((entry, index) => (
+            <li key={`${entry.member_name}-${entry.role}-${index}`} className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
+              <span className="font-semibold text-accent">{entry.member_name}</span>{' '}
+              <span className="text-zinc-500">als</span>{' '}
+              <span className="font-semibold text-zinc-900">{entry.role}</span>
+            </li>))}
         </ul>
       </section>
 
@@ -28,10 +32,8 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
         <div className="mt-2 space-y-2">
           {play.performances.map((performance) => (
             <div key={performance.id} className="flex flex-wrap items-center gap-4 rounded-xl border bg-white p-3 text-sm">
-              <span>{new Date(performance.start_datetime).toLocaleString('de-DE')}</span>
-              <span>Kapazität: {performance.capacity}</span>
-              <span>Online: {performance.reserved_online_tickets}/{performance.online_quota}</span>
-              {!performance.is_past && <Link href={`/tickets?performance=${performance.id}`} className="font-semibold text-accent">Reservieren</Link>}
+              <span>{formatDateTime(performance.start_datetime)}</span>
+              {!performance.is_past && <Link href={`/tickets?performance=${performance.id}`} className="font-semibold text-accent">Tickets reservieren →</Link>}
             </div>
           ))}
         </div>

@@ -16,9 +16,9 @@ type MemberCardProps = {
 
 export function MemberCard({ id, name, description, imageUrl, clubRoles, participations = [], actions }: MemberCardProps) {
   return (
-    <article id={id} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-zinc-200 transition hover:-translate-y-1">
+    <article id={id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
       {imageUrl ? (
-        <Image src={imageUrl} alt={name} width={800} height={600} className="aspect-[4/3] w-full rounded-xl object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src={imageUrl} alt={name} width={800} height={600} className="h-52 w-full object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
       ) : (
         <div className="aspect-[4/3] w-full rounded-xl bg-zinc-100" />
       )}
@@ -32,7 +32,9 @@ export function MemberCard({ id, name, description, imageUrl, clubRoles, partici
       {participations.length > 0 && (
         <ul className="mt-4 space-y-1 text-sm text-zinc-600">
           {participations.map((participation) => (
-            <li key={`${participation.piece}-${participation.role}`}>Mitgespielt in: {participation.piece} — Rolle: {participation.role}</li>
+            <li key={`${participation.piece}-${participation.role}`}>
+              • {participation.piece}: {participation.role}
+            </li>
           ))}
         </ul>
       )}

@@ -28,7 +28,7 @@ export type PublicMember = {
   id: string;
   name: string;
   description: string;
-  image_url: string;
+  image_url: string | null;
   club_roles: string[];
   participations: Participation[];
 };

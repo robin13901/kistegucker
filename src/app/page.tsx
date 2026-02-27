@@ -22,7 +22,7 @@ export default async function HomePage() {
   const upcoming = upcomingPerformances[0];
 
   return (
-    <div className="container-default space-y-16 py-12">
+    <div className="container-default space-y-12 py-12">
       <AnimatedSection>
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div className="space-y-5">
@@ -76,6 +76,7 @@ export default async function HomePage() {
                   <Link href={`/events/${upcoming.play.slug}`} className="inline-flex text-sm font-semibold text-accent">Details →</Link>
                 </div>
               </div>
+              <Link href={`/events/${play.slug}`} className="mt-3 inline-flex font-semibold text-accent">Zum Stück →</Link>
             </article>
           </section>
         </AnimatedSection>

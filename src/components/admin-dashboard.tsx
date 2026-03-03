@@ -9,6 +9,7 @@ import {
   useRef,
   useState
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MemberCard } from '@/components/member-card';
 import { PlayCard } from '@/components/play-card';
@@ -198,6 +199,7 @@ async function preprocessImageFile(file: File) {
 }
 
 export function AdminDashboard() {
+  const router = useRouter();
   const [state, setState] = useState<AdminState>({ email: '', password: '', loggedIn: false });
   const [activeTab, setActiveTab] = useState<'events' | 'members' | 'reservations'>('events');
   const [playForm, setPlayForm] = useState<PlayForm>(initialPlay);
@@ -389,6 +391,7 @@ export function AdminDashboard() {
     setState((prev) => ({ ...prev, feedback: 'Stück gespeichert.' }));
     setPlayForm(initialPlay);
     setShowEventForm(false);
+    router.refresh(); // Invalidate client-side Router Cache
     await loadData();
   }
 
@@ -436,6 +439,7 @@ export function AdminDashboard() {
     setMemberForm(initialMember);
     setClubRoleDraft('');
     setShowMemberForm(false);
+    router.refresh(); // Invalidate client-side Router Cache
     await loadData();
   }
 
@@ -443,20 +447,29 @@ export function AdminDashboard() {
     if (!id) return;
     const response = await fetch(`/api/admin/events?id=${id}`, { method: 'DELETE' });
     setState((prev) => ({ ...prev, feedback: response.ok ? 'Stück gelöscht.' : 'Stück konnte nicht gelöscht werden.' }));
-    if (response.ok) await loadData();
+    if (response.ok) {
+      router.refresh(); // Invalidate client-side Router Cache
+      await loadData();
+    }
   }
 
   async function deleteMember(id?: string) {
     if (!id) return;
     const response = await fetch(`/api/admin/members?id=${id}`, { method: 'DELETE' });
     setState((prev) => ({ ...prev, feedback: response.ok ? 'Mitglied gelöscht.' : 'Mitglied konnte nicht gelöscht werden.' }));
-    if (response.ok) await loadData();
+    if (response.ok) {
+      router.refresh(); // Invalidate client-side Router Cache
+      await loadData();
+    }
   }
 
   async function deleteReservation(id: string) {
     const response = await fetch(`/api/admin/reservations?id=${id}`, { method: 'DELETE' });
     setState((prev) => ({ ...prev, feedback: response.ok ? 'Reservierung gelöscht.' : 'Reservierung konnte nicht gelöscht werden.' }));
-    if (response.ok) await loadData();
+    if (response.ok) {
+      router.refresh(); // Invalidate client-side Router Cache
+      await loadData();
+    }
   }
 
   if (!state.loggedIn) {

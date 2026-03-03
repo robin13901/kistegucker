@@ -550,85 +550,259 @@ export function AdminDashboard() {
           </div>
 
           {showEventForm && (
-            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-card">
-              <form onSubmit={saveEvent} className="space-y-3">
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-sm font-medium">Titelbild hochladen</label>
-                  <input ref={eventImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'event')} className="hidden" />
-                  <button type="button" onClick={() => eventImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">
-                    Bild auswählen
-                  </button>
-                  {eventErrors.hero_image_url && <p className="mt-1 text-xs text-red-600">{eventErrors.hero_image_url}</p>}
-                  {playForm.hero_image_url && <img src={playForm.hero_image_url} alt="Titelbild Vorschau" className="mt-2 aspect-video w-full rounded-xl border border-zinc-200 object-cover" />}
+            <form onSubmit={saveEvent} className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50/50 p-4 md:p-6">
+              {/* Section 1: Basic Info */}
+              <fieldset className="space-y-4">
+                <legend className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-800">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs text-white">1</span>
+                  Allgemeine Informationen
+                </legend>
+
+                <div className="grid gap-4 md:grid-cols-[280px_1fr]">
+                  <div className="flex flex-col items-center gap-3">
+                    <input ref={eventImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'event')} className="hidden" />
+                    {playForm.hero_image_url ? (
+                      <div className="relative w-full">
+                        <img src={playForm.hero_image_url} alt="Titelbild Vorschau" className="aspect-video w-full rounded-xl border border-zinc-200 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => eventImageInputRef.current?.click()}
+                          className="absolute bottom-2 right-2 rounded-lg bg-white/90 px-2 py-1 text-xs font-medium shadow-sm transition hover:bg-white"
+                        >
+                          Ändern
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => eventImageInputRef.current?.click()}
+                        className="flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-white text-sm text-zinc-500 transition hover:border-accent hover:bg-zinc-50"
+                      >
+                        <span className="text-2xl">+</span>
+                        <span className="mt-1">Titelbild hochladen</span>
+                      </button>
+                    )}
+                    {eventErrors.hero_image_url && <p className="text-xs text-red-600">{eventErrors.hero_image_url}</p>}
+                  </div>
+
+                  <div className="space-y-3">
+                    <FieldInput id="event-title" label="Titel des Theaterstücks" value={playForm.title} onChange={(event) => setPlayForm((prev) => ({ ...prev, title: event.target.value }))} required />
+                    <AutoTextarea id="event-description" label="Beschreibung" value={playForm.description} onChange={(event) => setPlayForm((prev) => ({ ...prev, description: event.target.value }))} required className="min-h-[100px]" />
+                  </div>
                 </div>
+              </fieldset>
 
-                <FieldInput id="event-title" label="Titel des Theaterstücks" value={playForm.title} onChange={(event) => setPlayForm((prev) => ({ ...prev, title: event.target.value }))} required />
-                <AutoTextarea id="event-description" label="Beschreibung" value={playForm.description} onChange={(event) => setPlayForm((prev) => ({ ...prev, description: event.target.value }))} required className="min-h-[120px]" />
+              <hr className="my-6 border-zinc-200" />
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Besetzung</p>
+              {/* Section 2: Cast */}
+              <fieldset className="space-y-3">
+                <legend className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-800">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs text-white">2</span>
+                  Besetzung
+                </legend>
+
+                <div className="space-y-3">
                   {playForm.cast_entries.map((entry, index) => (
-                    <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                      <label className="flex min-h-[84px] flex-col gap-1"><span className="text-sm font-medium text-zinc-700">Mitglied</span><select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.member_name} onChange={(event) => setPlayForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))}><option value="">Mitglied auswählen</option>{members.map((member) => (<option key={member.id} value={member.name}>{member.name}</option>))}</select></label>
-                      <FieldInput label="Rolle" value={entry.role} onChange={(event) => setPlayForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
-                      <button type="button" className="h-9 w-9 self-center rounded-full border text-sm text-red-700 md:self-end" onClick={() => setPlayForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
+                    <div key={index} className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 md:flex-row md:items-center">
+                      <select
+                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        value={entry.member_name}
+                        onChange={(event) => setPlayForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, member_name: event.target.value } : row) }))}
+                      >
+                        <option value="">Mitglied auswählen...</option>
+                        {members.map((member) => (
+                          <option key={member.id} value={member.name}>{member.name}</option>
+                        ))}
+                      </select>
+                      <span className="hidden text-zinc-400 md:block">spielt</span>
+                      <input
+                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        value={entry.role}
+                        onChange={(event) => setPlayForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))}
+                        placeholder="Rolle"
+                      />
+                      <button
+                        type="button"
+                        className="self-end rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-100 md:self-center"
+                        onClick={() => setPlayForm((prev) => ({ ...prev, cast_entries: prev.cast_entries.filter((_, rowIndex) => rowIndex !== index) }))}
+                      >
+                        Entfernen
+                      </button>
                     </div>
                   ))}
-                  <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setPlayForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { member_name: '', role: '' }] }))}>Eintrag hinzufügen</button>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Aufführungen</p>
-                  {eventErrors.performances && <p className="text-xs text-red-600">{eventErrors.performances}</p>}
-                  {playForm.performances.map((entry, index) => (
-                    <div key={entry.id ?? index} className="rounded-xl border border-zinc-200 p-3">
-                      <div className="grid gap-2 md:grid-cols-2">
-                        <FieldInput label="Ort" value={entry.venue} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, venue: event.target.value } : row) }))} required />
-                        <FieldInput label="Aufführungsdatum" type="date" value={entry.event_date} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, event_date: event.target.value } : row) }))} required />
-                        <FieldInput label="Aufführungszeit" type="time" value={entry.performance_time} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, performance_time: event.target.value } : row) }))} required />
-                        <FieldInput label="Einlassbeginn" type="time" value={entry.admission_time} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, admission_time: event.target.value } : row) }))} required />
-                        <FieldInput label="Gesamtanzahl Plätze" type="number" min={1} value={entry.total_seats} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, total_seats: event.target.value === '' ? '' : Number(event.target.value) } : row) }))} required />
-                        <FieldInput label="Anzahl Online-Reservierungen" type="number" min={1} max={entry.total_seats || undefined} value={entry.online_seat_limit} onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, online_seat_limit: event.target.value === '' ? '' : Number(event.target.value) } : row) }))} required />
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        {new Date(`${entry.event_date}T${entry.performance_time || '00:00'}:00`).getTime() < Date.now() && (
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">Galerie (nur vergangene Aufführungen)</p>
-                            <input ref={(node) => { galleryInputRefs.current[index] = node; }} type="file" accept="image/*" multiple onChange={(event) => onGalleryImageSelect(event, index)} className="hidden" />
-                            <button type="button" onClick={() => galleryInputRefs.current[index]?.click()} className="rounded-lg border px-3 py-2 text-sm">Galeriebilder hinzufügen</button>
-                            {(entry.gallery ?? []).length > 0 && (
-                              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                                {(entry.gallery ?? []).map((imageUrl, galleryIndex) => (
-                                  <div key={`${entry.id ?? index}-${galleryIndex}`} className="relative">
-                                    <img src={imageUrl} alt={`Galeriebild ${galleryIndex + 1}`} className="aspect-video w-full rounded-lg border border-zinc-200 object-cover" />
-                                    <button
-                                      type="button"
-                                      className="absolute right-1 top-1 rounded-full bg-white/90 px-2 py-0.5 text-xs text-red-700"
-                                      onClick={() => setPlayForm((prev) => ({
-                                        ...prev,
-                                        performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, gallery: (row.gallery ?? []).filter((_, imageIndex) => imageIndex !== galleryIndex) } : row)
-                                      }))}
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                <button
+                  type="button"
+                  className="rounded-xl border border-dashed border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:border-accent hover:bg-accent/5 hover:text-accent"
+                  onClick={() => setPlayForm((prev) => ({ ...prev, cast_entries: [...prev.cast_entries, { member_name: '', role: '' }] }))}
+                >
+                  + Besetzung hinzufügen
+                </button>
+              </fieldset>
+
+              <hr className="my-6 border-zinc-200" />
+
+              {/* Section 3: Performances */}
+              <fieldset className="space-y-3">
+                <legend className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-800">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs text-white">3</span>
+                  Aufführungstermine
+                </legend>
+                {eventErrors.performances && <p className="text-xs text-red-600">{eventErrors.performances}</p>}
+
+                <div className="space-y-4">
+                  {playForm.performances.map((entry, index) => {
+                    const isPast = entry.event_date && entry.performance_time && new Date(`${entry.event_date}T${entry.performance_time}:00`).getTime() < Date.now();
+
+                    return (
+                      <div key={entry.id ?? index} className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+                        <div className="flex items-center justify-between bg-zinc-100 px-4 py-2">
+                          <span className="text-sm font-medium text-zinc-700">
+                            {entry.event_date ? new Date(entry.event_date).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : `Aufführung ${index + 1}`}
+                            {entry.performance_time && ` um ${entry.performance_time} Uhr`}
+                          </span>
+                          <button
+                            type="button"
+                            className="rounded-lg px-2 py-1 text-sm text-red-700 transition hover:bg-red-100"
+                            onClick={() => setPlayForm((prev) => ({ ...prev, performances: prev.performances.filter((_, rowIndex) => rowIndex !== index) }))}
+                          >
+                            Entfernen
+                          </button>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                          {/* Date & Time Row */}
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-zinc-600">Datum</label>
+                              <input
+                                type="date"
+                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                value={entry.event_date}
+                                onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, event_date: event.target.value } : row) }))}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-zinc-600">Beginn</label>
+                              <input
+                                type="time"
+                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                value={entry.performance_time}
+                                onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, performance_time: event.target.value } : row) }))}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-zinc-600">Einlass</label>
+                              <input
+                                type="time"
+                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                value={entry.admission_time}
+                                onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, admission_time: event.target.value } : row) }))}
+                                required
+                              />
+                            </div>
                           </div>
-                        )}
+
+                          {/* Venue */}
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-zinc-600">Veranstaltungsort</label>
+                            <input
+                              type="text"
+                              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                              value={entry.venue}
+                              onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, venue: event.target.value } : row) }))}
+                              required
+                            />
+                          </div>
+
+                          {/* Seats Row */}
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-zinc-600">Gesamtplätze</label>
+                              <input
+                                type="number"
+                                min={1}
+                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                value={entry.total_seats}
+                                onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, total_seats: event.target.value === '' ? '' : Number(event.target.value) } : row) }))}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-zinc-600">Online-Reservierungen max.</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={entry.total_seats || undefined}
+                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                value={entry.online_seat_limit}
+                                onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, online_seat_limit: event.target.value === '' ? '' : Number(event.target.value) } : row) }))}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          {/* Gallery for past performances */}
+                          {isPast && (
+                            <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-3">
+                              <p className="mb-2 text-xs font-medium text-zinc-600">Galerie (vergangene Aufführung)</p>
+                              <input ref={(node) => { galleryInputRefs.current[index] = node; }} type="file" accept="image/*" multiple onChange={(event) => onGalleryImageSelect(event, index)} className="hidden" />
+                              <button type="button" onClick={() => galleryInputRefs.current[index]?.click()} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm transition hover:bg-zinc-50">+ Bilder hinzufügen</button>
+                              {(entry.gallery ?? []).length > 0 && (
+                                <div className="mt-3 grid grid-cols-3 gap-2 md:grid-cols-4">
+                                  {(entry.gallery ?? []).map((imageUrl, galleryIndex) => (
+                                    <div key={`${entry.id ?? index}-${galleryIndex}`} className="relative">
+                                      <img src={imageUrl} alt={`Galeriebild ${galleryIndex + 1}`} className="aspect-video w-full rounded-lg border border-zinc-200 object-cover" />
+                                      <button
+                                        type="button"
+                                        className="absolute right-1 top-1 rounded-full bg-white/90 px-2 py-0.5 text-xs text-red-700"
+                                        onClick={() => setPlayForm((prev) => ({
+                                          ...prev,
+                                          performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, gallery: (row.gallery ?? []).filter((_, imageIndex) => imageIndex !== galleryIndex) } : row)
+                                        }))}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-2 flex justify-end">
-                        <button type="button" className="rounded-lg border px-3 py-1 text-sm text-red-700" onClick={() => setPlayForm((prev) => ({ ...prev, performances: prev.performances.filter((_, rowIndex) => rowIndex !== index) }))}>Aufführung entfernen</button>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setPlayForm((prev) => ({ ...prev, performances: [...prev.performances, { ...initialPerformance }] }))}>Aufführung hinzufügen</button>
+                    );
+                  })}
                 </div>
 
-                <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white">Speichern</button>
-              </form>
-            </div>
+                <button
+                  type="button"
+                  className="rounded-xl border border-dashed border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:border-accent hover:bg-accent/5 hover:text-accent"
+                  onClick={() => setPlayForm((prev) => ({ ...prev, performances: [...prev.performances, { ...initialPerformance }] }))}
+                >
+                  + Aufführungstermin hinzufügen
+                </button>
+              </fieldset>
+
+              <hr className="my-6 border-zinc-200" />
+
+              {/* Submit */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  className="rounded-xl border border-zinc-300 px-6 py-2.5 text-sm font-medium transition hover:bg-zinc-100"
+                  onClick={() => { setShowEventForm(false); setPlayForm(initialPlay); }}
+                >
+                  Abbrechen
+                </button>
+                <button className="rounded-xl bg-accent px-6 py-2.5 font-semibold text-white transition hover:bg-accent/90">
+                  {playForm.id ? 'Änderungen speichern' : 'Theaterstück erstellen'}
+                </button>
+              </div>
+            </form>
           )}
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
@@ -703,25 +877,92 @@ export function AdminDashboard() {
           </div>
 
           {showMemberForm && (
-            <form onSubmit={saveMember} className="mt-4 space-y-3">
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium">Mitgliedsbild hochladen</label>
-                <input ref={memberImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'member')} className="hidden" />
-                <button type="button" onClick={() => memberImageInputRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-100">Bild auswählen</button>
-                {memberErrors.image_url && <p className="mt-1 text-xs text-red-600">{memberErrors.image_url}</p>}
-                {memberForm.image_url && <img src={memberForm.image_url} alt="Mitglied Vorschau" className="mt-2 aspect-[4/3] w-[320px] max-w-full rounded-xl border border-zinc-200 object-cover" />}
-              </div>
+            <form onSubmit={saveMember} className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50/50 p-4 md:p-6">
+              {/* Section 1: Basic Info */}
+              <fieldset className="space-y-4">
+                <legend className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-800">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs text-white">1</span>
+                  Allgemeine Informationen
+                </legend>
 
-              <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
-              <AutoTextarea id="member-description" label="Beschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value }))} required className="min-h-[120px]" />
+                <div className="grid gap-4 md:grid-cols-[200px_1fr]">
+                  <div className="flex flex-col items-center gap-3">
+                    <input ref={memberImageInputRef} type="file" accept="image/*" onChange={(event) => onImageSelect(event, 'member')} className="hidden" />
+                    {memberForm.image_url ? (
+                      <div className="relative">
+                        <img src={memberForm.image_url} alt="Mitglied Vorschau" className="aspect-square w-32 rounded-xl border border-zinc-200 object-cover md:w-40" />
+                        <button
+                          type="button"
+                          onClick={() => memberImageInputRef.current?.click()}
+                          className="absolute bottom-2 right-2 rounded-lg bg-white/90 px-2 py-1 text-xs font-medium shadow-sm transition hover:bg-white"
+                        >
+                          Ändern
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => memberImageInputRef.current?.click()}
+                        className="flex aspect-square w-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-white text-sm text-zinc-500 transition hover:border-accent hover:bg-zinc-50 md:w-40"
+                      >
+                        <span className="text-2xl">+</span>
+                        <span className="mt-1">Foto</span>
+                      </button>
+                    )}
+                    {memberErrors.image_url && <p className="text-xs text-red-600">{memberErrors.image_url}</p>}
+                  </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Vereinsrollen</p>
+                  <div className="space-y-3">
+                    <FieldInput id="member-name" label="Name" value={memberForm.name} onChange={(event) => setMemberForm((prev) => ({ ...prev, name: event.target.value }))} required />
+                    <AutoTextarea id="member-description" label="Beschreibung" value={memberForm.description} onChange={(event) => setMemberForm((prev) => ({ ...prev, description: event.target.value }))} required className="min-h-[100px]" />
+                  </div>
+                </div>
+              </fieldset>
+
+              <hr className="my-6 border-zinc-200" />
+
+              {/* Section 2: Club Roles */}
+              <fieldset className="space-y-3">
+                <legend className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-800">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs text-white">2</span>
+                  Vereinsrollen
+                </legend>
+
+                <div className="flex flex-wrap gap-2">
+                  {memberForm.club_roles.filter((role) => role.trim()).map((role, index) => (
+                    <span key={`${role}-${index}`} className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-sm font-medium text-accent">
+                      {role}
+                      <button
+                        type="button"
+                        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-accent/70 transition hover:bg-accent/20 hover:text-accent"
+                        onClick={() => setMemberForm((prev) => ({ ...prev, club_roles: prev.club_roles.filter((entry) => entry.trim()).filter((_, entryIndex) => entryIndex !== index) }))}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
                 <div className="flex gap-2">
-                  <input className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={clubRoleDraft} onChange={(event) => setClubRoleDraft(event.target.value)} placeholder="z. B. Regie" />
+                  <input
+                    className="flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                    value={clubRoleDraft}
+                    onChange={(event) => setClubRoleDraft(event.target.value)}
+                    placeholder="z. B. Regie, Technik, Vorstand..."
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        if (clubRoleDraft.trim()) {
+                          setMemberForm((prev) => ({ ...prev, club_roles: [...prev.club_roles.filter((role) => role.trim()), clubRoleDraft.trim()] }));
+                          setClubRoleDraft('');
+                          setMemberErrors((prev) => ({ ...prev, club_roles: '' }));
+                        }
+                      }
+                    }}
+                  />
                   <button
                     type="button"
-                    className="rounded-lg border px-3 py-2 text-sm"
+                    className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium transition hover:bg-zinc-50"
                     onClick={() => {
                       if (!clubRoleDraft.trim()) {
                         setMemberErrors((prev) => ({ ...prev, club_roles: 'Bitte eine Rolle eingeben.' }));
@@ -732,41 +973,76 @@ export function AdminDashboard() {
                       setMemberErrors((prev) => ({ ...prev, club_roles: '' }));
                     }}
                   >
-                    Hinzufügen
+                    +
                   </button>
                 </div>
                 {memberErrors.club_roles && <p className="text-xs text-red-600">{memberErrors.club_roles}</p>}
-                <ul className="list-disc space-y-1 pl-6 text-sm text-zinc-700">
-                  {memberForm.club_roles.filter((role) => role.trim()).map((role, index) => (
-                    <li key={`${role}-${index}`} className="flex items-center justify-between gap-2">
-                      <span>{role}</span>
-                      <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs text-red-700" onClick={() => setMemberForm((prev) => ({ ...prev, club_roles: prev.club_roles.filter((entry) => entry.trim()).filter((_, entryIndex) => entryIndex !== index) }))}>✕</button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              </fieldset>
 
-              <div className="md:col-span-2 space-y-2">
-                <p className="text-sm font-medium">Mitgespielte Stücke</p>
-                {memberForm.participations.map((entry, index) => (
-                  <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                    <label className="flex min-h-[84px] flex-col gap-1">
-                      <span className="text-sm font-medium text-zinc-700">Stück</span>
-                      <select className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={entry.piece} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, piece: event.target.value } : row) }))}>
-                        <option value="">Stück auswählen</option>
+              <hr className="my-6 border-zinc-200" />
+
+              {/* Section 3: Participations */}
+              <fieldset className="space-y-3">
+                <legend className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-800">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs text-white">3</span>
+                  Mitgespielte Stücke
+                </legend>
+
+                <div className="space-y-3">
+                  {memberForm.participations.map((entry, index) => (
+                    <div key={index} className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 md:flex-row md:items-center">
+                      <select
+                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        value={entry.piece}
+                        onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, piece: event.target.value } : row) }))}
+                      >
+                        <option value="">Stück auswählen...</option>
                         {plays.map((savedPlay) => (
                           <option key={savedPlay.id} value={savedPlay.title}>{savedPlay.title}</option>
                         ))}
                       </select>
-                    </label>
-                    <FieldInput label="Rolle im Stück" value={entry.role} onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))} />
-                    <button type="button" className="h-9 w-9 self-center rounded-full border text-sm text-red-700 md:self-end" onClick={() => setMemberForm((prev) => ({ ...prev, participations: prev.participations.filter((_, rowIndex) => rowIndex !== index) }))}>✕</button>
-                  </div>
-                ))}
-                <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => setMemberForm((prev) => ({ ...prev, participations: [...prev.participations, { piece: '', role: '' }] }))}>Eintrag hinzufügen</button>
-              </div>
+                      <span className="hidden text-zinc-400 md:block">als</span>
+                      <input
+                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        value={entry.role}
+                        onChange={(event) => setMemberForm((prev) => ({ ...prev, participations: prev.participations.map((row, rowIndex) => rowIndex === index ? { ...row, role: event.target.value } : row) }))}
+                        placeholder="Rolle im Stück"
+                      />
+                      <button
+                        type="button"
+                        className="self-end rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-100 md:self-center"
+                        onClick={() => setMemberForm((prev) => ({ ...prev, participations: prev.participations.filter((_, rowIndex) => rowIndex !== index) }))}
+                      >
+                        Entfernen
+                      </button>
+                    </div>
+                  ))}
+                </div>
 
-              <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white">Speichern</button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-dashed border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:border-accent hover:bg-accent/5 hover:text-accent"
+                  onClick={() => setMemberForm((prev) => ({ ...prev, participations: [...prev.participations, { piece: '', role: '' }] }))}
+                >
+                  + Stück hinzufügen
+                </button>
+              </fieldset>
+
+              <hr className="my-6 border-zinc-200" />
+
+              {/* Submit */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  className="rounded-xl border border-zinc-300 px-6 py-2.5 text-sm font-medium transition hover:bg-zinc-100"
+                  onClick={() => { setShowMemberForm(false); setMemberForm(initialMember); setClubRoleDraft(''); }}
+                >
+                  Abbrechen
+                </button>
+                <button className="rounded-xl bg-accent px-6 py-2.5 font-semibold text-white transition hover:bg-accent/90">
+                  {memberForm.id ? 'Änderungen speichern' : 'Mitglied erstellen'}
+                </button>
+              </div>
             </form>
           )}
 

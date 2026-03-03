@@ -72,7 +72,7 @@
                     - option "Werner Weitershagen"
                 - generic [ref=e41]:
                   - generic [ref=e42]: Rolle
-                  - textbox "Rolle" [ref=e43]: Erzählerin
+                  - textbox "Rolle" [ref=e43]: Erzählerin-TEST
                 - button "✕" [ref=e44] [cursor=pointer]
               - generic [ref=e45]:
                 - generic [ref=e46]:

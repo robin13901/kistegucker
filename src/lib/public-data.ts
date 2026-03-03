@@ -74,7 +74,7 @@ const loadPublicPlays = unstable_cache(async (): Promise<PublicPlay[]> => {
       .filter((entry) => entry.member_id && entry.member_name)
       .map((entry) => ({ ...entry, member_id: entry.member_id as string, member_name: entry.member_name as string }))
   }));
-}, ['public-plays'], { revalidate: 120 });
+}, ['public-plays'], { tags: ['public-plays'] });
 
 const loadPublicMembers = unstable_cache(async (): Promise<PublicMember[]> => {
   const supabase = getSupabaseClient();
@@ -95,7 +95,7 @@ const loadPublicMembers = unstable_cache(async (): Promise<PublicMember[]> => {
   });
 
   return (members ?? []).map((member) => ({ ...member, participations: castByMember.get(member.id) ?? [] }));
-}, ['public-members'], { revalidate: 120 });
+}, ['public-members'], { tags: ['public-members'] });
 
 export async function getPublicPlays(): Promise<PublicPlay[]> {
   return await loadPublicPlays();

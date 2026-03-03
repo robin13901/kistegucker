@@ -42,6 +42,11 @@ test.describe('Cache Invalidation Tests', () => {
     const originalRole = await firstRoleInput.inputValue();
     console.log(`✓ Original role: "${originalRole}"`);
 
+    // Get the play title before we save (form will close after save)
+    const titleInput = page.locator('#event-title');
+    const playTitle = await titleInput.inputValue();
+    console.log(`✓ Play title: "${playTitle}"`);
+
     // Toggle a marker to make a reversible change
     const marker = '-TEST';
     const newRole = originalRole.endsWith(marker)
@@ -64,24 +69,41 @@ test.describe('Cache Invalidation Tests', () => {
     const stillInAdmin = await page.locator('button:has-text("Aufführungen")').isVisible({ timeout: 3000 }).catch(() => false);
     console.log(`✓ Still in admin after save: ${stillInAdmin}`);
 
-    // Step 6: Navigate to public event detail page via menu
+    // Step 6: Navigate directly to the event detail page we just edited
+    // Navigate to events list via menu
     const theaterstückeLink = page.locator('header a:has-text("Theaterstücke")');
     await theaterstückeLink.click();
     await page.waitForURL('**/events', { timeout: 10000 });
     await page.waitForTimeout(2000);
     console.log('✓ Navigated to events list');
 
-    // Click on first event to go to detail page
-    const eventLink = page.locator('a[href*="/events/"]').first();
-    await eventLink.click();
+    // Click on the event we just edited (find by title)
+    const eventLink = page.locator(`a:has-text("${playTitle}")`).first();
+    if (await eventLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await eventLink.click();
+    } else {
+      // Fallback to first event link
+      const firstEventLink = page.locator('a[href*="/events/"]').first();
+      await firstEventLink.click();
+    }
     await page.waitForURL('**/events/**', { timeout: 10000 });
     await page.waitForTimeout(2000);
     console.log('✓ Navigated to event detail page');
 
     // Step 7: Check if the change is reflected
-    const pageContent = await page.content();
-    const changeVisible = pageContent.includes(newRole);
-    console.log(`✓ Change visible on event detail page: ${changeVisible}`);
+    let pageContent = await page.content();
+    let changeVisible = pageContent.includes(newRole);
+    console.log(`✓ Change visible on event detail page (client nav): ${changeVisible}`);
+
+    // If not visible, try hard reload to check if Data Cache was invalidated
+    if (!changeVisible) {
+      console.log('! Trying hard reload to check Data Cache...');
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      pageContent = await page.content();
+      changeVisible = pageContent.includes(newRole);
+      console.log(`✓ Change visible after hard reload: ${changeVisible}`);
+    }
 
     // Step 8: Revert the change
     await page.goto(`${BASE_URL}/admin`);

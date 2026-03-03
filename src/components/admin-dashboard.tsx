@@ -628,6 +628,7 @@ export function AdminDashboard() {
                     is_past: Boolean(performance.is_past)
                   }))}
                   showReservationLink={false}
+                  showDetailsLink={false}
                   actions={(
                     <div className="flex gap-2">
                       <button

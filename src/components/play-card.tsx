@@ -20,6 +20,7 @@ type PlayCardProps = {
   mode: 'upcoming' | 'past';
   actions?: ReactNode;
   showReservationLink?: boolean;
+  showDetailsLink?: boolean;
 };
 
 export function PlayCard({
@@ -30,7 +31,8 @@ export function PlayCard({
   slug,
   mode,
   actions,
-  showReservationLink = true
+  showReservationLink = true,
+  showDetailsLink = true
 }: PlayCardProps) {
   const filteredPerformances = performances.filter((performance) => (mode === 'upcoming' ? !performance.is_past : performance.is_past));
 
@@ -58,7 +60,7 @@ export function PlayCard({
           <p className="mt-2 text-sm text-zinc-500">{filteredPerformances.map((performance) => formatDate(performance.start_datetime)).join(' · ') || '—'}</p>
         )}
 
-        {slug ? <Link href={`/events/${slug}`} className={`inline-flex font-semibold text-accent ${mode === 'upcoming' ? 'mt-3' : 'mt-4 text-sm'}`}>Details →</Link> : null}
+        {slug && showDetailsLink ? <Link href={`/events/${slug}`} className={`inline-flex font-semibold text-accent ${mode === 'upcoming' ? 'mt-3' : 'mt-4 text-sm'}`}>Details →</Link> : null}
       </div>
     </article>
   );

@@ -13,13 +13,24 @@ type PerformancePayload = {
   total_seats: number;
   online_seat_limit: number;
   venue?: string;
+  gallery?: string[];
 };
 
 function parseDateTime(date: string, time: string) {
   return `${date}T${time}:00`;
 }
 
-async function ensurePlay(admin: NonNullable<Awaited<ReturnType<typeof requireAdmin>>>, title: string, description: string, posterImage?: string) {
+async function ensurePlay(admin: NonNullable<Awaited<ReturnType<typeof requireAdmin>>>, id: string | undefined, title: string, description: string, posterImage?: string) {
+  if (id) {
+    const { data } = await admin.supabase
+      .from('plays')
+      .update({ title, description, poster_image: posterImage ?? null, slug: slugify(title), updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*')
+      .single();
+    return data;
+  }
+
   const slug = slugify(title);
   const { data: existing } = await admin.supabase.from('plays').select('*').eq('slug', slug).maybeSingle();
   if (existing) {
@@ -31,6 +42,7 @@ async function ensurePlay(admin: NonNullable<Awaited<ReturnType<typeof requireAd
       .single();
     return data;
   }
+
   const { data } = await admin.supabase.from('plays').insert({ title, description, poster_image: posterImage ?? null, slug }).select('*').single();
   return data;
 }
@@ -54,7 +66,8 @@ function mapPerformancePayload(playId: string, performance: PerformancePayload, 
     doors_datetime: performance.admission_time ? parseDateTime(String(performance.event_date ?? ''), String(performance.admission_time)) : null,
     venue: String(performance.venue ?? '') || fallbackVenue || DEFAULT_VENUE,
     capacity: Number(performance.total_seats ?? 0),
-    online_quota: Number(performance.online_seat_limit ?? 0)
+    online_quota: Number(performance.online_seat_limit ?? 0),
+    gallery: Array.isArray(performance.gallery) ? performance.gallery.filter(Boolean) : []
   };
 }
 
@@ -64,7 +77,7 @@ export async function GET() {
 
   const { data, error } = await admin.supabase
     .from('plays')
-    .select('id,slug,title,description,poster_image,performances(id,start_datetime,doors_datetime,venue,capacity,online_quota,reserved_online_tickets),play_cast(role,member:members(name))')
+    .select('id,slug,title,description,poster_image,performances(id,start_datetime,doors_datetime,venue,capacity,online_quota,reserved_online_tickets,gallery),play_cast(role,member:members(name))')
     .order('title', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -88,7 +101,9 @@ export async function GET() {
         venue: performance.venue,
         total_seats: performance.capacity,
         online_seat_limit: performance.online_quota,
-        reserved_online_tickets: performance.reserved_online_tickets
+        reserved_online_tickets: performance.reserved_online_tickets,
+        gallery: performance.gallery ?? [],
+        is_past: new Date(performance.start_datetime).getTime() < Date.now()
       }))
       .sort((a, b) => `${a.event_date}T${a.performance_time}`.localeCompare(`${b.event_date}T${b.performance_time}`))
   }));
@@ -101,7 +116,7 @@ export async function POST(request: Request) {
   if (!admin) return NextResponse.json({ error: 'Supabase ist nicht konfiguriert.' }, { status: 500 });
   const body = await request.json();
 
-  const play = await ensurePlay(admin, String(body.title ?? ''), String(body.description ?? ''), String(body.hero_image_url ?? ''));
+  const play = await ensurePlay(admin, undefined, String(body.title ?? ''), String(body.description ?? ''), String(body.hero_image_url ?? ''));
   if (!play) return NextResponse.json({ error: 'Stück konnte nicht gespeichert werden.' }, { status: 400 });
 
   const performances = (Array.isArray(body.performances) ? body.performances : []) as PerformancePayload[];
@@ -122,7 +137,7 @@ export async function PUT(request: Request) {
   const body = await request.json();
   if (!body.id) return NextResponse.json({ error: 'Stück-ID fehlt' }, { status: 400 });
 
-  const play = await ensurePlay(admin, String(body.title ?? ''), String(body.description ?? ''), String(body.hero_image_url ?? ''));
+  const play = await ensurePlay(admin, String(body.id), String(body.title ?? ''), String(body.description ?? ''), String(body.hero_image_url ?? ''));
   if (!play) return NextResponse.json({ error: 'Stück konnte nicht gespeichert werden.' }, { status: 400 });
 
   const performances = (Array.isArray(body.performances) ? body.performances : []) as PerformancePayload[];

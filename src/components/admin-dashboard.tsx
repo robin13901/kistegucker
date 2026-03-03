@@ -21,6 +21,7 @@ type AdminState = {
   email: string;
   password: string;
   loggedIn: boolean;
+  loading: boolean;
   feedback?: string;
 };
 
@@ -201,7 +202,7 @@ async function preprocessImageFile(file: File) {
 
 export function AdminDashboard() {
   const router = useRouter();
-  const [state, setState] = useState<AdminState>({ email: '', password: '', loggedIn: false });
+  const [state, setState] = useState<AdminState>({ email: '', password: '', loggedIn: false, loading: true });
   const [activeTab, setActiveTab] = useState<'events' | 'members' | 'reservations'>('events');
   const [playForm, setPlayForm] = useState<PlayForm>(initialPlay);
   const [memberForm, setMemberForm] = useState<MemberForm>(initialMember);
@@ -223,11 +224,16 @@ export function AdminDashboard() {
   // Check for existing session on mount (handles router.refresh() state loss)
   useEffect(() => {
     async function checkSession() {
-      if (!supabase) return;
+      if (!supabase) {
+        setState((prev) => ({ ...prev, loading: false }));
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        setState((prev) => ({ ...prev, loggedIn: true }));
+        setState((prev) => ({ ...prev, loggedIn: true, loading: false }));
         await loadData();
+      } else {
+        setState((prev) => ({ ...prev, loading: false }));
       }
     }
     checkSession();
@@ -289,6 +295,12 @@ export function AdminDashboard() {
 
     await loadData();
     setState((prev) => ({ ...prev, loggedIn: true, feedback: undefined }));
+  }
+
+  async function signOut() {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    setState({ email: '', password: '', loggedIn: false, loading: false });
   }
 
 
@@ -486,6 +498,14 @@ export function AdminDashboard() {
     }
   }
 
+  if (state.loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-zinc-500">Lade...</p>
+      </div>
+    );
+  }
+
   if (!state.loggedIn) {
     return (
       <form onSubmit={signIn} className="max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-card">
@@ -504,10 +524,13 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => setActiveTab('events')} className={`rounded-xl border px-4 py-2 ${activeTab === 'events' ? 'border-accent bg-accent text-white' : ''}`}>Aufführungen</button>
-        <button onClick={() => setActiveTab('members')} className={`rounded-xl border px-4 py-2 ${activeTab === 'members' ? 'border-accent bg-accent text-white' : ''}`}>Mitglieder</button>
-        <button onClick={() => setActiveTab('reservations')} className={`rounded-xl border px-4 py-2 ${activeTab === 'reservations' ? 'border-accent bg-accent text-white' : ''}`}>Reservierungen</button>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setActiveTab('events')} className={`rounded-xl border px-4 py-2 ${activeTab === 'events' ? 'border-accent bg-accent text-white' : ''}`}>Aufführungen</button>
+          <button onClick={() => setActiveTab('members')} className={`rounded-xl border px-4 py-2 ${activeTab === 'members' ? 'border-accent bg-accent text-white' : ''}`}>Mitglieder</button>
+          <button onClick={() => setActiveTab('reservations')} className={`rounded-xl border px-4 py-2 ${activeTab === 'reservations' ? 'border-accent bg-accent text-white' : ''}`}>Reservierungen</button>
+        </div>
+        <button onClick={signOut} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100">Abmelden</button>
       </div>
 
       {activeTab === 'events' && (

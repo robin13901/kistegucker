@@ -215,6 +215,7 @@ export function AdminDashboard() {
   const [clubRoleDraft, setClubRoleDraft] = useState('');
   const [showEventForm, setShowEventForm] = useState(false);
   const [showMemberForm, setShowMemberForm] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   const eventImageInputRef = useRef<HTMLInputElement | null>(null);
   const memberImageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -240,38 +241,43 @@ export function AdminDashboard() {
   }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
-    const [eventResponse, memberResponse, reservationResponse] = await Promise.all([
-      fetch('/api/admin/events'),
-      fetch('/api/admin/members'),
-      fetch('/api/admin/reservations')
-    ]);
+    setDataLoading(true);
+    try {
+      const [eventResponse, memberResponse, reservationResponse] = await Promise.all([
+        fetch('/api/admin/events'),
+        fetch('/api/admin/members'),
+        fetch('/api/admin/reservations')
+      ]);
 
-    const eventResult = eventResponse.ok ? await eventResponse.json() : { data: [] };
-    if (eventResponse.ok) {
-      setPlays(eventResult.data ?? []);
-    }
+      const eventResult = eventResponse.ok ? await eventResponse.json() : { data: [] };
+      if (eventResponse.ok) {
+        setPlays(eventResult.data ?? []);
+      }
 
-    if (memberResponse.ok) {
-      const result = await memberResponse.json();
-      const rawMembers = (result.data ?? []).map((entry: MemberForm) => normalizeMemberForm(entry));
-      const participationsByMember = new Map<string, Participation[]>();
+      if (memberResponse.ok) {
+        const result = await memberResponse.json();
+        const rawMembers = (result.data ?? []).map((entry: MemberForm) => normalizeMemberForm(entry));
+        const participationsByMember = new Map<string, Participation[]>();
 
-      (eventResult.data ?? []).forEach((play: PlayForm) => {
-        (play.cast_entries ?? []).forEach((castEntry) => {
-          const list = participationsByMember.get(castEntry.member_name) ?? [];
-          if (!list.some((item) => item.piece === play.title && item.role === castEntry.role)) {
-            list.push({ piece: play.title, role: castEntry.role });
-          }
-          participationsByMember.set(castEntry.member_name, list);
+        (eventResult.data ?? []).forEach((play: PlayForm) => {
+          (play.cast_entries ?? []).forEach((castEntry) => {
+            const list = participationsByMember.get(castEntry.member_name) ?? [];
+            if (!list.some((item) => item.piece === play.title && item.role === castEntry.role)) {
+              list.push({ piece: play.title, role: castEntry.role });
+            }
+            participationsByMember.set(castEntry.member_name, list);
+          });
         });
-      });
 
-      setMembers(rawMembers.map((entry: MemberForm) => ({ ...entry, participations: participationsByMember.get(entry.name) ?? [] })));
-    }
+        setMembers(rawMembers.map((entry: MemberForm) => ({ ...entry, participations: participationsByMember.get(entry.name) ?? [] })));
+      }
 
-    if (reservationResponse.ok) {
-      const result = await reservationResponse.json();
-      setReservations(result.data ?? []);
+      if (reservationResponse.ok) {
+        const result = await reservationResponse.json();
+        setReservations(result.data ?? []);
+      }
+    } finally {
+      setDataLoading(false);
     }
   }
 
@@ -311,7 +317,12 @@ export function AdminDashboard() {
     const performance = playForm.performances[performanceIndex];
     if (!performance) return;
 
-    const isPast = new Date(`${performance.event_date}T${performance.performance_time || '00:00'}:00`).getTime() < Date.now();
+    // Use is_past from database if available, otherwise calculate
+    const isPast = performance.is_past ?? (
+      performance.event_date &&
+      new Date(`${performance.event_date}T${performance.performance_time || '23:59'}:00`).getTime() < Date.now()
+    );
+
     if (!isPast) {
       setState((prev) => ({ ...prev, feedback: 'Galeriebilder können nur für vergangene Aufführungen hochgeladen werden.' }));
       event.target.value = '';
@@ -319,11 +330,13 @@ export function AdminDashboard() {
     }
 
     try {
+      setState((prev) => ({ ...prev, feedback: 'Bilder werden verarbeitet...' }));
       const converted = await Promise.all(files.map((file) => preprocessImageFile(file)));
       setPlayForm((prev) => ({
         ...prev,
         performances: prev.performances.map((row, rowIndex) => rowIndex === performanceIndex ? { ...row, gallery: [...(row.gallery ?? []), ...converted] } : row)
       }));
+      setState((prev) => ({ ...prev, feedback: `${converted.length} Bild(er) hinzugefügt.` }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Galeriebilder konnten nicht hochgeladen werden.';
       setState((prev) => ({ ...prev, feedback: message }));
@@ -522,6 +535,14 @@ export function AdminDashboard() {
     ? reservations.filter((entry) => entry.play?.id === selectedReservationPlayId)
     : reservations;
 
+  // Loading spinner component
+  const LoadingSpinner = () => (
+    <div className="flex flex-col items-center justify-center py-16">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-accent" />
+      <p className="mt-4 text-sm text-zinc-500">Daten werden geladen...</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -533,7 +554,9 @@ export function AdminDashboard() {
         <button onClick={signOut} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100">Abmelden</button>
       </div>
 
-      {activeTab === 'events' && (
+      {dataLoading && <LoadingSpinner />}
+
+      {!dataLoading && activeTab === 'events' && (
         <section className="rounded-2xl bg-white p-6 shadow-card">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Aufführungen verwalten</h2>
@@ -653,7 +676,11 @@ export function AdminDashboard() {
 
                 <div className="space-y-4">
                   {playForm.performances.map((entry, index) => {
-                    const isPast = entry.event_date && entry.performance_time && new Date(`${entry.event_date}T${entry.performance_time}:00`).getTime() < Date.now();
+                    // Use is_past from database if available, otherwise calculate
+                    const isPast = entry.is_past ?? (
+                      entry.event_date &&
+                      new Date(`${entry.event_date}T${entry.performance_time || '23:59'}:00`).getTime() < Date.now()
+                    );
 
                     return (
                       <div key={entry.id ?? index} className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
@@ -674,31 +701,31 @@ export function AdminDashboard() {
                         <div className="p-4 space-y-4">
                           {/* Date & Time Row */}
                           <div className="grid gap-3 sm:grid-cols-3">
-                            <div>
+                            <div className="min-w-0">
                               <label className="mb-1 block text-xs font-medium text-zinc-600">Datum</label>
                               <input
                                 type="date"
-                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                                 value={entry.event_date}
                                 onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, event_date: event.target.value } : row) }))}
                                 required
                               />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <label className="mb-1 block text-xs font-medium text-zinc-600">Beginn</label>
                               <input
                                 type="time"
-                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                                 value={entry.performance_time}
                                 onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, performance_time: event.target.value } : row) }))}
                                 required
                               />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <label className="mb-1 block text-xs font-medium text-zinc-600">Einlass</label>
                               <input
                                 type="time"
-                                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                                className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                                 value={entry.admission_time}
                                 onChange={(event) => setPlayForm((prev) => ({ ...prev, performances: prev.performances.map((row, rowIndex) => rowIndex === index ? { ...row, admission_time: event.target.value } : row) }))}
                                 required
@@ -857,7 +884,7 @@ export function AdminDashboard() {
         </section>
       )}
 
-      {activeTab === 'members' && (
+      {!dataLoading && activeTab === 'members' && (
         <section className="rounded-2xl bg-white p-6 shadow-card">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Mitglieder verwalten</h2>
@@ -1067,7 +1094,7 @@ export function AdminDashboard() {
         </section>
       )}
 
-      {activeTab === 'reservations' && (
+      {!dataLoading && activeTab === 'reservations' && (
         <section className="rounded-2xl bg-white p-6 shadow-card">
           <h2 className="text-xl font-semibold">Reservierungen je Theaterstück</h2>
           <div className="mt-4 flex flex-wrap gap-3">

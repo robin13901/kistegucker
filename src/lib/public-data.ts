@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export type PublicPerformance = {
@@ -45,7 +44,9 @@ type PlayRow = {
 
 type MemberCastRow = { member_id: string; role: string; play: { title: string } | Array<{ title: string }> };
 
-const loadPublicPlays = unstable_cache(async (): Promise<PublicPlay[]> => {
+// Fetch fresh data on each request - no caching issues with on-demand revalidation
+// Since pages use force-dynamic, data is always fresh from the database
+export async function getPublicPlays(): Promise<PublicPlay[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
 
@@ -74,9 +75,9 @@ const loadPublicPlays = unstable_cache(async (): Promise<PublicPlay[]> => {
       .filter((entry) => entry.member_id && entry.member_name)
       .map((entry) => ({ ...entry, member_id: entry.member_id as string, member_name: entry.member_name as string }))
   }));
-}, ['public-plays'], { tags: ['public-plays'] });
+}
 
-const loadPublicMembers = unstable_cache(async (): Promise<PublicMember[]> => {
+export async function getPublicMembers(): Promise<PublicMember[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
 
@@ -95,12 +96,4 @@ const loadPublicMembers = unstable_cache(async (): Promise<PublicMember[]> => {
   });
 
   return (members ?? []).map((member) => ({ ...member, participations: castByMember.get(member.id) ?? [] }));
-}, ['public-members'], { tags: ['public-members'] });
-
-export async function getPublicPlays(): Promise<PublicPlay[]> {
-  return await loadPublicPlays();
-}
-
-export async function getPublicMembers(): Promise<PublicMember[]> {
-  return await loadPublicMembers();
 }

@@ -1,0 +1,279 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Die Kistegucker e.V." [ref=e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e5]:
+        - link "Start" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - link "Theaterstücke" [ref=e7] [cursor=pointer]:
+          - /url: /events
+        - link "Mitglieder" [ref=e8] [cursor=pointer]:
+          - /url: /mitglieder
+        - link "Admin" [ref=e9] [cursor=pointer]:
+          - /url: /admin
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - heading "Adminbereich" [level=1] [ref=e12]
+      - paragraph [ref=e13]: Bereich zur Verwaltung von Mitgliedern, Aufführungen und Reservierungen.
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - button "Aufführungen" [ref=e16] [cursor=pointer]
+          - button "Mitglieder" [ref=e17] [cursor=pointer]
+          - button "Reservierungen" [ref=e18] [cursor=pointer]
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - heading "Aufführungen verwalten" [level=2] [ref=e21]
+            - button "Form schließen" [ref=e22] [cursor=pointer]
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - generic [ref=e26]: Titelbild hochladen
+              - button "Bild auswählen" [ref=e27] [cursor=pointer]
+              - img "Titelbild Vorschau" [ref=e28]
+            - generic [ref=e29]:
+              - generic [ref=e30]: Titel des Theaterstücks
+              - textbox "Titel des Theaterstücks" [ref=e31]: App ins Märchenland
+            - generic [ref=e32]:
+              - generic [ref=e33]: Beschreibung
+              - textbox "Beschreibung" [ref=e34]: "Modernes Kinderstück: Das märchenhafte Reich wird bedroht, weil immer mehr Kinder nur noch am Smartphone hängen. Mit einem verzauberten Handy gelangt die böse Königin in die reale Welt und es beginnt ein buntes Abenteuer zwischen klassischen Märchenfiguren und digitalen Dilemmas. Fantasievoll und lehrreich für Familien."
+            - generic [ref=e35]:
+              - paragraph [ref=e36]: Besetzung
+              - generic [ref=e37]:
+                - generic [ref=e38]:
+                  - generic [ref=e39]: Mitglied
+                  - combobox "Mitglied" [ref=e40]:
+                    - option "Mitglied auswählen"
+                    - option "Achim Geiger"
+                    - option "Andrea Ungermann"
+                    - option "Anna Tarantino"
+                    - option "Annabelle Schöning"
+                    - option "Antonia Peuser"
+                    - option "Carolin Thomas"
+                    - option "Florentine Lesniak" [selected]
+                    - option "Hannah Grenz"
+                    - option "Jürgen Pfaff"
+                    - option "Kerstin Jehn"
+                    - option "Laura Ebert"
+                    - option "Lina Schuch"
+                    - option "Louis Klingenstein"
+                    - option "Luisa Struck"
+                    - option "Mara Rüze"
+                    - option "Oliver Fischer"
+                    - option "Oliver Schäfer"
+                    - option "Paula Gräf"
+                    - option "Reinhold Schleuning"
+                    - option "Sara Klingenstein"
+                    - option "Sarah Rumpf"
+                    - option "Sigrid Ungermann"
+                    - option "Tara Gräf"
+                    - option "Werner Weitershagen"
+                - generic [ref=e41]:
+                  - generic [ref=e42]: Rolle
+                  - textbox "Rolle" [ref=e43]: Erzählerin
+                - button "✕" [ref=e44] [cursor=pointer]
+              - generic [ref=e45]:
+                - generic [ref=e46]:
+                  - generic [ref=e47]: Mitglied
+                  - combobox "Mitglied" [ref=e48]:
+                    - option "Mitglied auswählen"
+                    - option "Achim Geiger"
+                    - option "Andrea Ungermann" [selected]
+                    - option "Anna Tarantino"
+                    - option "Annabelle Schöning"
+                    - option "Antonia Peuser"
+                    - option "Carolin Thomas"
+                    - option "Florentine Lesniak"
+                    - option "Hannah Grenz"
+                    - option "Jürgen Pfaff"
+                    - option "Kerstin Jehn"
+                    - option "Laura Ebert"
+                    - option "Lina Schuch"
+                    - option "Louis Klingenstein"
+                    - option "Luisa Struck"
+                    - option "Mara Rüze"
+                    - option "Oliver Fischer"
+                    - option "Oliver Schäfer"
+                    - option "Paula Gräf"
+                    - option "Reinhold Schleuning"
+                    - option "Sara Klingenstein"
+                    - option "Sarah Rumpf"
+                    - option "Sigrid Ungermann"
+                    - option "Tara Gräf"
+                    - option "Werner Weitershagen"
+                - generic [ref=e49]:
+                  - generic [ref=e50]: Rolle
+                  - textbox "Rolle" [ref=e51]: Regie
+                - button "✕" [ref=e52] [cursor=pointer]
+              - generic [ref=e53]:
+                - generic [ref=e54]:
+                  - generic [ref=e55]: Mitglied
+                  - combobox "Mitglied" [ref=e56]:
+                    - option "Mitglied auswählen"
+                    - option "Achim Geiger"
+                    - option "Andrea Ungermann"
+                    - option "Anna Tarantino"
+                    - option "Annabelle Schöning"
+                    - option "Antonia Peuser"
+                    - option "Carolin Thomas"
+                    - option "Florentine Lesniak"
+                    - option "Hannah Grenz" [selected]
+                    - option "Jürgen Pfaff"
+                    - option "Kerstin Jehn"
+                    - option "Laura Ebert"
+                    - option "Lina Schuch"
+                    - option "Louis Klingenstein"
+                    - option "Luisa Struck"
+                    - option "Mara Rüze"
+                    - option "Oliver Fischer"
+                    - option "Oliver Schäfer"
+                    - option "Paula Gräf"
+                    - option "Reinhold Schleuning"
+                    - option "Sara Klingenstein"
+                    - option "Sarah Rumpf"
+                    - option "Sigrid Ungermann"
+                    - option "Tara Gräf"
+                    - option "Werner Weitershagen"
+                - generic [ref=e57]:
+                  - generic [ref=e58]: Rolle
+                  - textbox "Rolle" [ref=e59]: Test
+                - button "✕" [ref=e60] [cursor=pointer]
+              - generic [ref=e61]:
+                - generic [ref=e62]:
+                  - generic [ref=e63]: Mitglied
+                  - combobox "Mitglied" [ref=e64]:
+                    - option "Mitglied auswählen"
+                    - option "Achim Geiger"
+                    - option "Andrea Ungermann"
+                    - option "Anna Tarantino"
+                    - option "Annabelle Schöning"
+                    - option "Antonia Peuser"
+                    - option "Carolin Thomas"
+                    - option "Florentine Lesniak"
+                    - option "Hannah Grenz"
+                    - option "Jürgen Pfaff" [selected]
+                    - option "Kerstin Jehn"
+                    - option "Laura Ebert"
+                    - option "Lina Schuch"
+                    - option "Louis Klingenstein"
+                    - option "Luisa Struck"
+                    - option "Mara Rüze"
+                    - option "Oliver Fischer"
+                    - option "Oliver Schäfer"
+                    - option "Paula Gräf"
+                    - option "Reinhold Schleuning"
+                    - option "Sara Klingenstein"
+                    - option "Sarah Rumpf"
+                    - option "Sigrid Ungermann"
+                    - option "Tara Gräf"
+                    - option "Werner Weitershagen"
+                - generic [ref=e65]:
+                  - generic [ref=e66]: Rolle
+                  - textbox "Rolle" [ref=e67]: TEST1234
+                - button "✕" [ref=e68] [cursor=pointer]
+              - button "Eintrag hinzufügen" [ref=e69] [cursor=pointer]
+            - generic [ref=e70]:
+              - paragraph [ref=e71]: Aufführungen
+              - generic [ref=e72]:
+                - generic [ref=e73]:
+                  - generic [ref=e74]:
+                    - generic [ref=e75]: Ort
+                    - textbox "Ort" [ref=e76]: Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)
+                  - generic [ref=e77]:
+                    - generic [ref=e78]: Aufführungsdatum
+                    - textbox "Aufführungsdatum" [ref=e79]: 2025-08-28
+                  - generic [ref=e80]:
+                    - generic [ref=e81]: Aufführungszeit
+                    - textbox "Aufführungszeit" [ref=e82]: 20:00
+                  - generic [ref=e83]:
+                    - generic [ref=e84]: Einlassbeginn
+                    - textbox "Einlassbeginn" [ref=e85]: 19:15
+                  - generic [ref=e86]:
+                    - generic [ref=e87]: Gesamtanzahl Plätze
+                    - spinbutton "Gesamtanzahl Plätze" [ref=e88]: "300"
+                  - generic [ref=e89]:
+                    - generic [ref=e90]: Anzahl Online-Reservierungen
+                    - spinbutton "Anzahl Online-Reservierungen" [ref=e91]: "200"
+                - generic [ref=e93]:
+                  - paragraph [ref=e94]: Galerie (nur vergangene Aufführungen)
+                  - button "Galeriebilder hinzufügen" [ref=e95] [cursor=pointer]
+                  - generic [ref=e96]:
+                    - generic [ref=e97]:
+                      - img "Galeriebild 1" [ref=e98]
+                      - button "✕" [ref=e99] [cursor=pointer]
+                    - generic [ref=e100]:
+                      - img "Galeriebild 2" [ref=e101]
+                      - button "✕" [ref=e102] [cursor=pointer]
+                - button "Aufführung entfernen" [ref=e104] [cursor=pointer]
+              - button "Aufführung hinzufügen" [ref=e105] [cursor=pointer]
+            - button "Speichern" [active] [ref=e106] [cursor=pointer]
+          - generic [ref=e107]:
+            - article [ref=e108]:
+              - img "App ins Märchenland" [ref=e109]
+              - generic [ref=e110]:
+                - generic [ref=e111]:
+                  - heading "App ins Märchenland" [level=3] [ref=e112]
+                  - generic [ref=e113]:
+                    - button "Theaterstück bearbeiten" [ref=e114] [cursor=pointer]: ✏️
+                    - button "Theaterstück löschen" [ref=e115] [cursor=pointer]: 🗑️
+                - paragraph [ref=e116]: "Modernes Kinderstück: Das märchenhafte Reich wird bedroht, weil immer mehr Kinder nur noch am Smartphone hängen. Mit einem verzauberten Handy gelangt die böse Königin in die reale Welt und es beginnt ein buntes Abenteuer zwischen klassischen Märchenfiguren und digitalen Dilemmas. Fantasievoll und lehrreich für Familien."
+                - paragraph [ref=e117]: 28.08.2025
+                - link "Details →" [ref=e118] [cursor=pointer]:
+                  - /url: /events/app-ins-maerchenland
+            - article [ref=e119]:
+              - img "Der Watzmann ruft" [ref=e120]
+              - generic [ref=e121]:
+                - generic [ref=e122]:
+                  - heading "Der Watzmann ruft" [level=3] [ref=e123]
+                  - generic [ref=e124]:
+                    - button "Theaterstück bearbeiten" [ref=e125] [cursor=pointer]: ✏️
+                    - button "Theaterstück löschen" [ref=e126] [cursor=pointer]: 🗑️
+                - paragraph [ref=e127]: „Der Watzmann ruft“ ist ein legendäres Rustical voller Musik, Humor und alpiner Atmosphäre über den unwiderstehlichen Ruf des mächtigen Berges und den Mut, ihm zu trotzen. Die herzliche, zugleich satirische Geschichte einer Bergbauernfamilie nimmt das Publikum mit auf eine dramatisch‑komische Reise zwischen Verlockung, Sehnsucht und alpenländischer Lebenslust. Mit mitreißenden Liedern von Wolfgang Ambros und witzigen Figuren ist dieses Stück ein Publikumsmagnet, der Kultstatus und große Spielfreude verbindet – ein unvergessliches Erlebnis für alle Theaterfans!
+                - generic [ref=e128]:
+                  - generic [ref=e129]:
+                    - generic [ref=e130]: 28.08.2026
+                    - generic [ref=e131]: 6/200
+                  - generic [ref=e132]:
+                    - generic [ref=e133]: 29.08.2026
+                    - generic [ref=e134]: 0/200
+                - link "Details →" [ref=e135] [cursor=pointer]:
+                  - /url: /events/der-watzmann-ruft
+            - article [ref=e136]:
+              - img "Haarige Zeiten" [ref=e137]
+              - generic [ref=e138]:
+                - generic [ref=e139]:
+                  - heading "Haarige Zeiten" [level=3] [ref=e140]
+                  - generic [ref=e141]:
+                    - button "Theaterstück bearbeiten" [ref=e142] [cursor=pointer]: ✏️
+                    - button "Theaterstück löschen" [ref=e143] [cursor=pointer]: 🗑️
+                - paragraph [ref=e144]: "Frische Komödie über eine Friseursalon-Katastrophe: Friseurmeisterin Moni und ihr gutgläubiger Ehemann werden von einer unangekündigten Steuerprüfung überrascht. Aus einem bürokratischen Albtraum entsteht ein heilloses Durcheinander voller Missverständnisse, skurriler Kundinnen und haarsträubender Wendungen. Ein fröhlicher Abend mit viel Witz und sympathischen Figuren."
+                - paragraph [ref=e145]: 07.11.2025 · 08.11.2025 · 09.11.2025
+                - link "Details →" [ref=e146] [cursor=pointer]:
+                  - /url: /events/haarige-zeiten
+            - article [ref=e147]:
+              - img "Mit Vollgas in die 80er" [ref=e148]
+              - generic [ref=e149]:
+                - generic [ref=e150]:
+                  - heading "Mit Vollgas in die 80er" [level=3] [ref=e151]
+                  - generic [ref=e152]:
+                    - button "Theaterstück bearbeiten" [ref=e153] [cursor=pointer]: ✏️
+                    - button "Theaterstück löschen" [ref=e154] [cursor=pointer]: 🗑️
+                - paragraph [ref=e155]: "Nostalgische, leichte Komödie: Als die Geschwister Holger und Sabine im Elternhaus eine selbstgebaute Zeitmaschine entdecken, landen sie prompt im chaotischen Jahr 1989. Zwischen Röhrenfernsehern, schrillen Trainingsanzügen und schrulligen 80er-Charakteren entstehen absurde Situationen und jede Menge Lacher. Ein Abend voller Nostalgie, Musik und skurrilem Humor."
+                - paragraph [ref=e156]: 03.11.2023 · 04.11.2023 · 05.11.2023
+                - link "Details →" [ref=e157] [cursor=pointer]:
+                  - /url: /events/mit-vollgas-in-die-80er
+  - contentinfo [ref=e158]:
+    - generic [ref=e159]:
+      - paragraph [ref=e160]: © 2026 Die Kistegucker e.V. · Linsengericht
+      - generic [ref=e161]:
+        - link "Impressum" [ref=e162] [cursor=pointer]:
+          - /url: /impressum
+        - link "Datenschutz" [ref=e163] [cursor=pointer]:
+          - /url: /datenschutz
+  - generic [ref=e164]:
+    - paragraph [ref=e165]: Wir verwenden ausschließlich technisch notwendige Cookies. Tracking- oder Marketing-Cookies setzen wir derzeit nicht ein.
+    - button "Verstanden" [ref=e166] [cursor=pointer]
+  - alert [ref=e167]
+```

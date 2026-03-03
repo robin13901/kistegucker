@@ -5,8 +5,8 @@ const ADMIN_EMAIL = 'vorstand.kistegucker@gmx.de';
 const ADMIN_PASSWORD = '%T9*D9@C9mNwsskn';
 
 test.describe('Cache Invalidation Tests', () => {
-  test('Admin member edit should reflect immediately on public members page via navigation', async ({ page }) => {
-    test.setTimeout(120000);
+  test('Admin event edit should reflect immediately on public event detail page', async ({ page }) => {
+    test.setTimeout(150000);
 
     // Step 1: Go to admin page and login
     await page.goto(`${BASE_URL}/admin`);
@@ -21,65 +21,73 @@ test.describe('Cache Invalidation Tests', () => {
     await page.waitForSelector('button:has-text("Aufführungen")', { timeout: 15000 });
     console.log('✓ Logged into admin dashboard');
 
-    // Step 2: Click on Members tab
-    await page.click('button:has-text("Mitglieder")');
+    // Step 2: Make sure we're on the Events tab (Aufführungen)
+    await page.click('button:has-text("Aufführungen")');
     await page.waitForTimeout(2000);
-    console.log('✓ Navigated to Members tab');
+    console.log('✓ On Events tab');
 
-    // Step 3: Find edit button (emoji ✏️) and click on first member
-    const editButton = page.locator('button[aria-label="Mitglied bearbeiten"]').first();
+    // Step 3: Find and click edit on "App ins Märchenland"
+    const editButton = page.locator('button[title="Bearbeiten"]').first();
     await editButton.waitFor({ state: 'visible', timeout: 10000 });
     await editButton.click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     console.log('✓ Clicked edit button');
 
-    // Step 4: Wait for form to appear
-    await page.waitForSelector('form', { timeout: 5000 });
+    // Step 4: Find a cast entry and modify the role
+    // The role input is in a label with text "Rolle"
+    await page.waitForTimeout(2000);
+    const roleLabel = page.locator('label:has-text("Rolle")').first();
+    const firstRoleInput = roleLabel.locator('input');
+    await firstRoleInput.waitFor({ state: 'visible', timeout: 10000 });
+    const originalRole = await firstRoleInput.inputValue();
+    console.log(`✓ Original role: "${originalRole}"`);
 
-    // Get the bio textarea and make a small change
-    const bioTextarea = page.locator('textarea').first();
-    await bioTextarea.waitFor({ state: 'visible', timeout: 5000 });
-    const originalBio = await bioTextarea.inputValue();
-    console.log(`✓ Original bio (last 30 chars): "...${originalBio.slice(-30)}"`);
+    // Toggle a marker to make a reversible change
+    const marker = '-TEST';
+    const newRole = originalRole.endsWith(marker)
+      ? originalRole.slice(0, -marker.length)
+      : originalRole + marker;
 
-    // Toggle a marker at the end to make a reversible change
-    const marker = ' [TEST]';
-    const newBio = originalBio.endsWith(marker)
-      ? originalBio.slice(0, -marker.length)
-      : originalBio + marker;
-
-    await bioTextarea.fill(newBio);
-    console.log(`✓ Changed bio to end with: "...${newBio.slice(-30)}"`);
+    await firstRoleInput.fill(newRole);
+    console.log(`✓ Changed role to: "${newRole}"`);
 
     // Step 5: Click save button
     const saveButton = page.locator('button:has-text("Speichern")');
     await saveButton.click();
     console.log('✓ Clicked save');
 
-    // Wait for save to complete (give Vercel time to process revalidation)
+    // Wait for save to complete
     await page.waitForTimeout(5000);
     console.log('✓ Waited for save and revalidation');
 
-    // Step 6: Navigate to public members page via header navigation (client-side navigation)
-    const mitgliederLink = page.locator('header a:has-text("Mitglieder")');
-    await mitgliederLink.click();
-    console.log('✓ Clicked Mitglieder link in header');
+    // Check if we're still logged in (not redirected)
+    const stillInAdmin = await page.locator('button:has-text("Aufführungen")').isVisible({ timeout: 3000 }).catch(() => false);
+    console.log(`✓ Still in admin after save: ${stillInAdmin}`);
 
-    await page.waitForURL('**/mitglieder', { timeout: 10000 });
-    // Wait a bit more for the page to fully render
-    await page.waitForTimeout(3000);
-    console.log('✓ Navigated to public members page');
+    // Step 6: Navigate to public event detail page via menu
+    const theaterstückeLink = page.locator('header a:has-text("Theaterstücke")');
+    await theaterstückeLink.click();
+    await page.waitForURL('**/events', { timeout: 10000 });
+    await page.waitForTimeout(2000);
+    console.log('✓ Navigated to events list');
 
-    // Step 7: Check if the change is reflected in the page content
-    let pageContent = await page.content();
-    let changeVisible = pageContent.includes(marker);
-    console.log(`✓ Change visible on public page (client-side nav): ${changeVisible}`);
+    // Click on first event to go to detail page
+    const eventLink = page.locator('a[href*="/events/"]').first();
+    await eventLink.click();
+    await page.waitForURL('**/events/**', { timeout: 10000 });
+    await page.waitForTimeout(2000);
+    console.log('✓ Navigated to event detail page');
 
-    // Step 8: Revert the change - go back to admin
+    // Step 7: Check if the change is reflected
+    const pageContent = await page.content();
+    const changeVisible = pageContent.includes(newRole);
+    console.log(`✓ Change visible on event detail page: ${changeVisible}`);
+
+    // Step 8: Revert the change
     await page.goto(`${BASE_URL}/admin`);
     await page.waitForLoadState('networkidle');
 
-    // Login if needed (session may be preserved)
+    // Login if needed
     const loginButton = page.locator('button:has-text("Einloggen")');
     if (await loginButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await page.fill('input[type="email"]', ADMIN_EMAIL);
@@ -88,21 +96,19 @@ test.describe('Cache Invalidation Tests', () => {
       await page.waitForSelector('button:has-text("Aufführungen")', { timeout: 15000 });
     }
 
-    // Click members tab again
-    await page.click('button:has-text("Mitglieder")');
+    await page.click('button:has-text("Aufführungen")');
     await page.waitForTimeout(2000);
-
-    // Edit first member again
     await editButton.click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
 
-    // Revert bio
-    await bioTextarea.fill(originalBio);
+    // Revert role
+    await firstRoleInput.fill(originalRole);
     await saveButton.click();
     await page.waitForTimeout(2000);
-    console.log('✓ Reverted bio to original');
+    console.log('✓ Reverted role to original');
 
-    // Assert that the change was visible (either via client-side nav or hard reload)
+    // Assert
     expect(changeVisible).toBe(true);
+    expect(stillInAdmin).toBe(true);
   });
 });

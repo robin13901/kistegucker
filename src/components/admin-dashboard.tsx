@@ -5,6 +5,7 @@ import {
   FormEvent,
   InputHTMLAttributes,
   TextareaHTMLAttributes,
+  useEffect,
   useMemo,
   useRef,
   useState
@@ -218,6 +219,19 @@ export function AdminDashboard() {
   const galleryInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const supabase = useMemo(() => (hasSupabaseConfig ? createClientComponentClient() : null), [hasSupabaseConfig]);
+
+  // Check for existing session on mount (handles router.refresh() state loss)
+  useEffect(() => {
+    async function checkSession() {
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setState((prev) => ({ ...prev, loggedIn: true }));
+        await loadData();
+      }
+    }
+    checkSession();
+  }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
     const [eventResponse, memberResponse, reservationResponse] = await Promise.all([

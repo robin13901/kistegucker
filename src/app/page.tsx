@@ -3,6 +3,9 @@ import { AnimatedSection } from '@/components/animated-section';
 import { PlayCard } from '@/components/play-card';
 import { getPublicPlays } from '@/lib/public-data';
 
+// Force dynamic rendering to ensure on-demand revalidation works
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   const plays = await getPublicPlays();
   const upcomingPlays = plays.filter((play) => play.performances.some((p) => !p.is_past));

@@ -4,6 +4,9 @@ import { formatDateTime } from '@/lib/format';
 import { notFound } from 'next/navigation';
 import { getPublicPlays } from '@/lib/public-data';
 
+// Force dynamic rendering to ensure on-demand revalidation works
+export const dynamic = 'force-dynamic';
+
 type EventDetailProps = {
   params: { slug: string } | Promise<{ slug: string }>;
 };

@@ -2,6 +2,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getPublicPlays } from '@/lib/public-data';
 
+// Force dynamic rendering to ensure on-demand revalidation works
+export const dynamic = 'force-dynamic';
+
 export default async function EventsPage() {
   const plays = await getPublicPlays();
 

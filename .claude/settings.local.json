@@ -8,7 +8,9 @@
       "Bash(npm run build)",
       "Bash(npm install -D @playwright/test)",
       "Bash(npx playwright install chromium)",
-      "Bash(npx playwright test tests/cache-invalidation.spec.ts --headed)"
+      "Bash(npx playwright test tests/cache-invalidation.spec.ts --headed)",
+      "Bash(curl -s \"https://kistegucker.vercel.app/events\")",
+      "Bash(curl -s \"https://kistegucker.vercel.app/events/app-ins-maerchenland\")"
     ]
   }
 }

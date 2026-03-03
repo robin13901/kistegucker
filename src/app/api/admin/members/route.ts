@@ -3,9 +3,14 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 
 function revalidatePublicData() {
+  // Invalidate the Data Cache (unstable_cache)
   revalidateTag('public-plays');
   revalidateTag('public-members');
-  revalidatePath('/', 'layout');
+  // Invalidate the Router Cache for all public pages
+  revalidatePath('/');
+  revalidatePath('/mitglieder');
+  revalidatePath('/events');
+  revalidatePath('/tickets');
 }
 
 type MemberPayload = {

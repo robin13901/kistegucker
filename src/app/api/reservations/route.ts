@@ -4,8 +4,13 @@ import { reservationSchema } from '@/lib/validation';
 import { getSupabaseClient } from '@/lib/supabase';
 
 function revalidatePublicData() {
+  // Invalidate the Data Cache (unstable_cache)
   revalidateTag('public-plays');
-  revalidatePath('/', 'layout');
+  // Invalidate the Router Cache for all public pages
+  revalidatePath('/');
+  revalidatePath('/mitglieder');
+  revalidatePath('/events');
+  revalidatePath('/tickets');
 }
 
 export async function POST(request: Request) {

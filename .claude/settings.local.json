@@ -5,7 +5,10 @@
       "WebFetch(domain:kistegucker.vercel.app)",
       "Bash(npm run typecheck)",
       "Bash(npm run lint)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(npm install -D @playwright/test)",
+      "Bash(npx playwright install chromium)",
+      "Bash(npx playwright test tests/cache-invalidation.spec.ts --headed)"
     ]
   }
 }

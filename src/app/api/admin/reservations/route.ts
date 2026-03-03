@@ -5,8 +5,13 @@ import { slugify } from '@/lib/format';
 import { buildXlsx } from '@/lib/xlsx';
 
 function revalidatePublicData() {
+  // Invalidate the Data Cache (unstable_cache)
   revalidateTag('public-plays');
-  revalidatePath('/', 'layout');
+  // Invalidate the Router Cache for all public pages
+  revalidatePath('/');
+  revalidatePath('/mitglieder');
+  revalidatePath('/events');
+  revalidatePath('/tickets');
 }
 
 function formatReservationDateTime(value: string) {

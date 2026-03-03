@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { slugify } from '@/lib/format';
+
+function revalidatePublicData() {
+  revalidateTag('public-plays');
+  revalidateTag('public-members');
+}
 
 const DEFAULT_VENUE = 'Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)';
 
@@ -128,6 +134,7 @@ export async function POST(request: Request) {
   }
 
   await syncCast(admin, play.id, Array.isArray(body.cast_entries) ? body.cast_entries : []);
+  revalidatePublicData();
   return NextResponse.json({ data: play });
 }
 
@@ -163,6 +170,7 @@ export async function PUT(request: Request) {
   }
 
   await syncCast(admin, play.id, Array.isArray(body.cast_entries) ? body.cast_entries : []);
+  revalidatePublicData();
   return NextResponse.json({ data: play });
 }
 
@@ -180,5 +188,6 @@ export async function DELETE(request: Request) {
 
   const { error } = await admin.supabase.from('plays').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  revalidatePublicData();
   return NextResponse.json({ ok: true });
 }

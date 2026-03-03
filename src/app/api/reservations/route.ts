@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { reservationSchema } from '@/lib/validation';
 import { getSupabaseClient } from '@/lib/supabase';
 
@@ -51,5 +52,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Datenbankfehler beim Speichern.' }, { status: 500 });
   }
 
+  revalidateTag('public-plays');
   return NextResponse.json({ message: 'Reservierung gespeichert. Bestätigungsmail wurde angestoßen.' });
 }

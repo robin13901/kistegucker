@@ -75,22 +75,6 @@ test.describe('Cache Invalidation Tests', () => {
     let changeVisible = pageContent.includes(marker);
     console.log(`✓ Change visible on public page (client-side nav): ${changeVisible}`);
 
-    // If not visible via client-side nav, try hard reload to check Data Cache
-    if (!changeVisible) {
-      console.log('! Client-side nav did not show change, trying hard reload...');
-      await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(2000);
-      pageContent = await page.content();
-      const changeVisibleAfterReload = pageContent.includes(marker);
-      console.log(`✓ Change visible after hard reload: ${changeVisibleAfterReload}`);
-
-      // If visible after reload but not after client-side nav, Router Cache is the issue
-      if (changeVisibleAfterReload) {
-        console.log('! Data Cache is invalidated correctly, but Router Cache needs more time');
-        changeVisible = true; // Consider it a partial success
-      }
-    }
-
     // Step 8: Revert the change - go back to admin
     await page.goto(`${BASE_URL}/admin`);
     await page.waitForLoadState('networkidle');

@@ -11,6 +11,8 @@ function revalidatePublicData() {
   revalidatePath('/mitglieder');
   revalidatePath('/events');
   revalidatePath('/tickets');
+  // Invalidate all dynamic event detail pages
+  revalidatePath('/events/[slug]', 'page');
 }
 
 export async function POST(request: Request) {

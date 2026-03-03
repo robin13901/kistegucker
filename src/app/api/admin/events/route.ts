@@ -3,7 +3,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { slugify } from '@/lib/format';
 
-function revalidatePublicData() {
+async function revalidatePublicData(slug?: string) {
   // Invalidate the Data Cache (unstable_cache)
   revalidateTag('public-plays');
   revalidateTag('public-members');
@@ -12,6 +12,12 @@ function revalidatePublicData() {
   revalidatePath('/mitglieder');
   revalidatePath('/events');
   revalidatePath('/tickets');
+  // Invalidate dynamic event detail pages
+  if (slug) {
+    revalidatePath(`/events/${slug}`);
+  }
+  // Also invalidate all event detail pages via layout
+  revalidatePath('/events/[slug]', 'page');
 }
 
 const DEFAULT_VENUE = 'Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)';
@@ -140,7 +146,7 @@ export async function POST(request: Request) {
   }
 
   await syncCast(admin, play.id, Array.isArray(body.cast_entries) ? body.cast_entries : []);
-  revalidatePublicData();
+  await revalidatePublicData(play.slug);
   return NextResponse.json({ data: play });
 }
 
@@ -176,7 +182,7 @@ export async function PUT(request: Request) {
   }
 
   await syncCast(admin, play.id, Array.isArray(body.cast_entries) ? body.cast_entries : []);
-  revalidatePublicData();
+  await revalidatePublicData(play.slug);
   return NextResponse.json({ data: play });
 }
 
@@ -186,6 +192,10 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'Stück-ID fehlt' }, { status: 400 });
 
+  // Get the play slug before deleting for revalidation
+  const { data: playData } = await admin.supabase.from('plays').select('slug').eq('id', id).single();
+  const slug = playData?.slug;
+
   const { error: castError } = await admin.supabase.from('play_cast').delete().eq('play_id', id);
   if (castError) return NextResponse.json({ error: castError.message }, { status: 400 });
 
@@ -194,6 +204,6 @@ export async function DELETE(request: Request) {
 
   const { error } = await admin.supabase.from('plays').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  revalidatePublicData();
+  await revalidatePublicData(slug);
   return NextResponse.json({ ok: true });
 }

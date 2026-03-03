@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 
-function revalidatePublicData() {
+async function revalidatePublicData() {
   // Invalidate the Data Cache (unstable_cache)
   revalidateTag('public-plays');
   revalidateTag('public-members');
@@ -11,6 +11,8 @@ function revalidatePublicData() {
   revalidatePath('/mitglieder');
   revalidatePath('/events');
   revalidatePath('/tickets');
+  // Invalidate all dynamic event detail pages
+  revalidatePath('/events/[slug]', 'page');
 }
 
 type MemberPayload = {
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
   if (Object.keys(fieldErrors).length) return NextResponse.json({ error: 'Bitte korrigiere die Eingaben im Formular.', fieldErrors }, { status: 400 });
   const { data, error } = await admin.supabase.from('members').insert(payload).select('*').single();
   if (error) return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
-  revalidatePublicData();
+  await revalidatePublicData();
   return NextResponse.json({ data });
 }
 
@@ -61,7 +63,7 @@ export async function PUT(request: Request) {
   if (Object.keys(fieldErrors).length) return NextResponse.json({ error: 'Bitte korrigiere die Eingaben im Formular.', fieldErrors }, { status: 400 });
   const { data, error } = await admin.supabase.from('members').update(payload).eq('id', body.id).select('*').single();
   if (error) return NextResponse.json({ error: `Datenbankfehler: ${error.message}` }, { status: 400 });
-  revalidatePublicData();
+  await revalidatePublicData();
   return NextResponse.json({ data });
 }
 
@@ -72,6 +74,6 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: 'Mitglieds-ID fehlt' }, { status: 400 });
   const { error } = await admin.supabase.from('members').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  revalidatePublicData();
+  await revalidatePublicData();
   return NextResponse.json({ ok: true });
 }

@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MemberCard } from '@/components/member-card';
-import { slugify, toHourMinute } from '@/lib/format';
+import { slugify, toHourMinute, formatDate } from '@/lib/format';
 
 type AdminState = {
   email: string;
@@ -57,6 +57,7 @@ type ReservationEntry = {
   name: string;
   email: string;
   tickets: number;
+  performance?: { id?: string; start_datetime?: string };
   play?: { id?: string; title?: string };
 };
 
@@ -413,10 +414,10 @@ export function AdminDashboard() {
     return (
       <form onSubmit={signIn} className="max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-card">
         <h2 className="text-xl font-semibold">Admin Login</h2>
-        <input type="email" placeholder="admin@kistegucker.de" className="w-full rounded-lg border border-zinc-300 px-3 py-2" value={state.email} onChange={(event) => setState((prev) => ({ ...prev, email: event.target.value }))} />
-        <input type="password" placeholder="Passwort" className="w-full rounded-lg border border-zinc-300 px-3 py-2" value={state.password} onChange={(event) => setState((prev) => ({ ...prev, password: event.target.value }))} />
-        <button className="rounded-xl bg-accent px-4 py-2 font-semibold text-white">Einloggen</button>
-        {state.feedback && <p className="text-sm text-zinc-600">{state.feedback}</p>}
+        <input type="email" placeholder="E-Mail-Adresse" className="w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={state.email} onChange={(event) => setState((prev) => ({ ...prev, email: event.target.value }))} />
+        <input type="password" placeholder="Passwort" className="w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20" value={state.password} onChange={(event) => setState((prev) => ({ ...prev, password: event.target.value }))} />
+        <button className="w-full rounded-xl bg-accent px-4 py-2.5 font-semibold text-white transition hover:bg-accent/90">Einloggen</button>
+        {state.feedback && <p className="text-sm text-red-600">{state.feedback}</p>}
       </form>
     );
   }
@@ -530,7 +531,7 @@ export function AdminDashboard() {
                     >
                       ✏️
                     </button>
-                    <button type="button" onClick={() => deleteEvent(entry.id)} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Theaterstück löschen" title="Löschen">🗑️</button>
+                    <button type="button" onClick={() => { if (window.confirm(`"${entry.title}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) deleteEvent(entry.id); }} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Theaterstück löschen" title="Löschen">🗑️</button>
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-zinc-700">{entry.description}</p>
@@ -639,7 +640,7 @@ export function AdminDashboard() {
                 actions={(
                   <div className="flex gap-2">
                     <button type="button" onClick={() => { setMemberForm(normalizeMemberForm(entry)); setShowMemberForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg border px-2 py-1 text-sm" aria-label="Mitglied bearbeiten" title="Bearbeiten">✏️</button>
-                    <button type="button" onClick={() => deleteMember(entry.id)} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Mitglied löschen" title="Löschen">🗑️</button>
+                    <button type="button" onClick={() => { if (window.confirm(`"${entry.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) deleteMember(entry.id); }} className="rounded-lg border px-2 py-1 text-sm text-red-700" aria-label="Mitglied löschen" title="Löschen">🗑️</button>
                   </div>
                 )}
               />
@@ -662,13 +663,17 @@ export function AdminDashboard() {
           </div>
 
           <div className="mt-4 space-y-2">
+            {filteredReservations.length === 0 && (
+              <p className="text-sm text-zinc-500">Keine Reservierungen vorhanden.</p>
+            )}
             {filteredReservations.map((entry) => (
-              <div key={entry.id} className="flex flex-wrap items-center justify-between rounded-lg border border-zinc-200 px-3 py-2">
-                <div>
-                  <p className="font-medium">{entry.name} ({entry.tickets} Tickets)</p>
-                  <p className="text-xs text-zinc-500">{entry.play?.title ?? ''} · {entry.email}</p>
+              <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{entry.name}</p>
+                  <p className="text-sm text-zinc-600">{entry.tickets} {entry.tickets === 1 ? 'Ticket' : 'Tickets'} · {entry.email}</p>
+                  <p className="text-xs text-zinc-500">{entry.play?.title ?? 'Unbekanntes Stück'}{entry.performance?.start_datetime ? ` · ${formatDate(entry.performance.start_datetime)}` : ''}</p>
                 </div>
-                <button onClick={() => deleteReservation(entry.id)} className="rounded-lg border px-3 py-1 text-sm text-red-700">Löschen</button>
+                <button onClick={() => { if (window.confirm(`Reservierung von ${entry.name} wirklich löschen?`)) deleteReservation(entry.id); }} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-700 transition hover:bg-red-100">Löschen</button>
               </div>
             ))}
           </div>

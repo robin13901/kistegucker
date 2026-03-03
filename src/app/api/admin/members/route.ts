@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 
 function revalidatePublicData() {
   revalidateTag('public-plays');
   revalidateTag('public-members');
+  revalidatePath('/', 'layout');
 }
 
 type MemberPayload = {

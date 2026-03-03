@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { reservationSchema } from '@/lib/validation';
 import { getSupabaseClient } from '@/lib/supabase';
+
+function revalidatePublicData() {
+  revalidateTag('public-plays');
+  revalidatePath('/', 'layout');
+}
 
 export async function POST(request: Request) {
   const payload = await request.json();
@@ -52,6 +57,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Datenbankfehler beim Speichern.' }, { status: 500 });
   }
 
-  revalidateTag('public-plays');
+  revalidatePublicData();
   return NextResponse.json({ message: 'Reservierung gespeichert. Bestätigungsmail wurde angestoßen.' });
 }

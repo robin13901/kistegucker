@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { slugify } from '@/lib/format';
 import { buildXlsx } from '@/lib/xlsx';
+
+function revalidatePublicData() {
+  revalidateTag('public-plays');
+  revalidatePath('/', 'layout');
+}
 
 function formatReservationDateTime(value: string) {
   const dt = new Date(value);
@@ -83,6 +88,6 @@ export async function DELETE(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   await admin.supabase.rpc('decrement_reserved_tickets', { performance_id_input: reservation.performance_id, ticket_amount: reservation.tickets });
-  revalidateTag('public-plays');
+  revalidatePublicData();
   return NextResponse.json({ ok: true });
 }

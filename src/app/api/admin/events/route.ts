@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { slugify } from '@/lib/format';
 
 function revalidatePublicData() {
   revalidateTag('public-plays');
   revalidateTag('public-members');
+  revalidatePath('/', 'layout');
 }
 
 const DEFAULT_VENUE = 'Bürgersaal Eidengesäß (Talstraße 4A, 63589 Linsengericht)';

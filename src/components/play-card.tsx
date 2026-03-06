@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { formatDate } from '@/lib/format';
+import { OptimizedImage } from './optimized-image';
 
 type PlayCardPerformance = {
   id: string;
@@ -38,7 +38,7 @@ export function PlayCard({
 
   return (
     <article className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card">
-      {posterImage && <Image src={posterImage} alt={title} width={1200} height={700} className="h-52 w-full object-cover" />}
+      {posterImage && <OptimizedImage src={posterImage} alt={title} width={1200} height={700} className="h-52 w-full object-cover" />}
       <div className="p-6">
         <div className="flex items-start justify-between gap-3">
           <h3 className="mt-2 text-xl font-semibold">{title}</h3>

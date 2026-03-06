@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import { AnimatedSection } from '@/components/animated-section';
 import { PlayCard } from '@/components/play-card';
 import { getPublicPlays } from '@/lib/public-data';
+import { OptimizedImage } from '@/components/optimized-image';
 
 // Force dynamic rendering to ensure on-demand revalidation works
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export default async function HomePage() {
             <p className="text-lg text-zinc-700">Wir bringen modernes Amateurtheater mit Herz, Humor und Haltung auf die Bühne.</p>
           </div>
           <div className="relative overflow-hidden rounded-3xl shadow-card">
-            <Image
+            <OptimizedImage
               src="https://images.unsplash.com/photo-1507924538820-ede94a04019d?auto=format&fit=crop&w=1400&q=80"
               alt="Theaterbühne mit Spotlights"
               width={1200}

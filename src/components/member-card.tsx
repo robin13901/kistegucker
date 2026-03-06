@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { formatRoles } from '@/lib/format';
+import { OptimizedImage } from './optimized-image';
 
 type Participation = { piece: string; role: string };
 
@@ -19,14 +19,13 @@ export function MemberCard({ id, name, description, imageUrl, clubRoles, partici
     <article id={id} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-zinc-200 transition hover:-translate-y-1">
       {imageUrl ? (
         <div className="overflow-hidden rounded-xl">
-          <Image
+          <OptimizedImage
             src={imageUrl}
             alt={name}
             width={800}
             height={600}
             className="h-52 w-full object-cover"
             sizes="(max-width: 768px) 100vw, 33vw"
-            unoptimized
           />
         </div>
       ) : (

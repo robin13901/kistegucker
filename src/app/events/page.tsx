@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { getPublicPlays } from '@/lib/public-data';
+import { OptimizedImage } from '@/components/optimized-image';
 
 // Force dynamic rendering to ensure on-demand revalidation works
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ export default async function EventsPage() {
         {plays.map((event) => (
           <article key={event.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-card transition hover:-translate-y-1">
             {event.poster_image && (
-              <Image src={event.poster_image} alt={event.title} width={800} height={400} className="h-48 w-full object-cover" />
+              <OptimizedImage src={event.poster_image} alt={event.title} width={800} height={400} className="h-48 w-full object-cover" />
             )}
             <div className="p-6">
               <h3 className="text-xl font-semibold">{event.title}</h3>

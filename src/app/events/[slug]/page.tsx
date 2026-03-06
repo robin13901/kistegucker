@@ -1,8 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { formatDateTime } from '@/lib/format';
 import { notFound } from 'next/navigation';
 import { getPublicPlays } from '@/lib/public-data';
+import { OptimizedImage } from '@/components/optimized-image';
 
 // Force dynamic rendering to ensure on-demand revalidation works
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ export default async function EventDetailPage({ params }: EventDetailProps) {
 
   return (
     <div className="container-default space-y-6 py-12">
-      {play.poster_image ? <Image src={play.poster_image} alt={play.title} width={1400} height={900} className="h-64 w-full rounded-2xl object-cover" /> : null}
+      {play.poster_image ? <OptimizedImage src={play.poster_image} alt={play.title} width={1400} height={900} className="h-64 w-full rounded-2xl object-cover" priority /> : null}
       <h1 className="text-3xl font-bold">{play.title}</h1>
       <p className="max-w-3xl text-zinc-700">{play.description}</p>
 
@@ -47,7 +47,7 @@ export default async function EventDetailPage({ params }: EventDetailProps) {
               {performance.gallery.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                   {performance.gallery.map((imageUrl, index) => (
-                    <Image key={`${performance.id}-${index}`} src={imageUrl} alt={`${play.title} Aufführung ${index + 1}`} width={1200} height={900} className="aspect-video w-full rounded-lg object-cover" unoptimized />
+                    <OptimizedImage key={`${performance.id}-${index}`} src={imageUrl} alt={`${play.title} Aufführung ${index + 1}`} width={1200} height={900} className="aspect-video w-full rounded-lg object-cover" />
                   ))}
                 </div>
               )}

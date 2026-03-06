@@ -11,9 +11,10 @@ export function ReservationForm({ eventId, maxTickets = 4, disabled = false }: P
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setStatus({ type: 'submitting' });
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
 
     const payload = {
       name: String(formData.get('name') ?? ''),
@@ -33,7 +34,7 @@ export function ReservationForm({ eventId, maxTickets = 4, disabled = false }: P
         type: 'success',
         message: 'Danke! Deine Reservierung wurde gespeichert und bestätigt.'
       });
-      event.currentTarget.reset();
+      form.reset();
       return;
     }
 

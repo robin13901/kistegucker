@@ -13,7 +13,11 @@
       "Bash(curl -s \"https://kistegucker.vercel.app/events/app-ins-maerchenland\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/admin)",
       "Bash(npx tsc --noEmit)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(npm install --save-dev vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event @vitest/coverage-v8 @vitest/ui msw whatwg-fetch)",
+      "Bash(npm install --save-dev vitest@^3.2.0 @vitejs/plugin-react jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event @vitest/coverage-v8@^3.2.0 @vitest/ui@^3.2.0 msw whatwg-fetch)",
+      "Bash(npm test)",
+      "Bash(npm run test:coverage)"
     ]
   }
 }
